@@ -1,0 +1,235 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Chatbot IFPI {% endblock title %}
+
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+<style>
+  .chat-container {
+    max-width: 1150px;
+    margin: 40px auto;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: 70vh;
+  }
+
+  .chat-header {
+    background: linear-gradient(90deg, #4e54c8, #8f94fb);
+    color: white;
+    padding: 15px 25px;
+    font-size: 20px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+  }
+
+  .chat-header img {
+    width: 32px;
+    margin-right: 10px;
+  }
+
+  .chat-body {
+    background-color: #f9f9f9;
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    scroll-behavior: smooth;
+  }
+
+  .chat-footer {
+    background-color: #ffffff;
+    padding: 16px;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .chat-message {
+    margin-bottom: 18px;
+    display: flex;
+    align-items: flex-end;
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  .chat-message.user {
+    justify-content: flex-end;
+  }
+
+  .chat-bubble {
+    padding: 12px 18px;
+    border-radius: 20px;
+    max-width: 75%;
+    font-size: 15px;
+    line-height: 1.4;
+    transition: all 0.3s ease-in-out;
+  }
+
+  .chat-message.bot .chat-bubble {
+    background-color: #e6e8f5;
+    color: #333;
+    border-bottom-left-radius: 0;
+  }
+
+  .chat-message.user .chat-bubble {
+    background-color: #4e54c8;
+    color: white;
+    border-bottom-right-radius: 0;
+  }
+
+  .chat-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin: 0 10px;
+  }
+
+  .chat-timestamp {
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 4px;
+  }
+
+  input.form-control:focus {
+    box-shadow: none;
+    border-color: #8f94fb;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Spinner */
+  .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #4e54c8;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+  }
+
+  .avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+<div class="chat-container bg-white">
+  <div class="chat-header">
+      <img src="{{ url_for('static', filename='assets/images/logo_ivortice.png') }}" alt="Bot" class="avatar">
+    Piazinho
+  </div>
+
+  <div id="chat-box" class="chat-body">
+    <!-- Conversa aparece aqui -->
+  </div>
+
+  <div class="chat-footer">
+  <form id="chat-form" class="d-flex justify-content-center align-items-center gap-3">
+    <input type="text" id="user-input" class="form-control flex-grow-1 rounded-pill px-4" placeholder="Digite sua mensagem..." autocomplete="off" style="max-width: 80%;">
+    <button type="submit" class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="white" viewBox="0 0 24 24">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+      </svg>
+    </button>
+  </form>
+</div>
+
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+  const form = document.getElementById('chat-form');
+  const input = document.getElementById('user-input');
+  const chatBox = document.getElementById('chat-box');
+
+  function createMessageBubble(sender, text, isLoading = false) {
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const isUser = sender === 'user';
+
+    const message = document.createElement('div');
+    message.className = `chat-message ${isUser ? 'user' : 'bot'}`;
+
+    const avatar = document.createElement('img');
+    avatar.className = 'chat-avatar';
+    avatar.src = isUser
+      ? 'https://cdn-icons-png.flaticon.com/512/9131/9131529.png'
+      : 'https://cdn-icons-png.flaticon.com/512/4712/4712109.png';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+
+    if (isLoading) {
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      bubble.appendChild(spinner);
+      bubble.appendChild(document.createTextNode(' Digitando...'));
+    } else {
+      bubble.innerHTML = text;
+    }
+
+    const timestampElem = document.createElement('div');
+    timestampElem.className = 'chat-timestamp';
+    timestampElem.innerText = timestamp;
+
+    const content = document.createElement('div');
+    content.appendChild(bubble);
+    content.appendChild(timestampElem);
+
+    if (isUser) {
+      message.appendChild(content);
+      message.appendChild(avatar);
+    } else {
+      message.appendChild(avatar);
+      message.appendChild(content);
+    }
+
+    chatBox.appendChild(message);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    return message;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const userText = input.value.trim();
+    if (!userText) return;
+
+    createMessageBubble('user', userText);
+    input.value = "";
+
+    const loadingMsg = createMessageBubble('bot', '', true);
+
+    try {
+      const res = await fetch('/chatbot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText })
+      });
+
+      const data = await res.json();
+      chatBox.removeChild(loadingMsg);
+      createMessageBubble('bot', data.reply);
+    } catch (error) {
+      chatBox.removeChild(loadingMsg);
+      createMessageBubble('bot', '❌ Erro ao se comunicar com o servidor.');
+    }
+  });
+</script>
+{% endblock javascripts %}
