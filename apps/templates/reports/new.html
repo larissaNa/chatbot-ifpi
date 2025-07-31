@@ -1,0 +1,27 @@
+{% extends 'layouts/base.html' %}
+{% block content %}
+<h3>Gerar Relatório</h3>
+<form id="form-relatorio" method="POST">
+  {{ form.csrf_token }}
+  <div class="mb-3">
+    {{ form.consulta.label }} {{ form.consulta(class="form-select") }}
+  </div>
+  <button type="button" id="btn-preview" class="btn btn-secondary">Visualizar</button>
+  <div id="preview-container" class="mt-3"></div>
+{{ form.conteudo_base64() }}
+  {{ form.submit(class="btn btn-primary mt-3", disabled=true) }}
+</form>
+<script>
+  document.getElementById("btn-preview").addEventListener("click", async()=>{
+    const consultaId = document.querySelector("select[name='consulta']").value;
+    const res = await fetch("{{ url_for('reports.preview_relatorio') }}", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({consulta_id:consultaId})
+    });
+    const data = await res.json();
+    document.getElementById("preview-container").innerHTML = data.html;
+    document.querySelector("input[name='conteudo_base64']").value = data.base64;
+    document.querySelector("input[type='submit']").disabled = false;
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatório de Análise de Sentimentos</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Relatório de Análise de Sentimentos</h1>
+  </header>
+
+  <section id="introducao">
+    <h2>Introdução</h2>
+    <p>
+      A análise de sentimento refere-se à classe de técnicas baseadas em processamento de linguagem natural e computacional usadas para identificar, extrair ou caracterizar informações subjetivas, como opiniões, expressas em um determinado texto. O principal objetivo é classificar a atitude de um escritor em relação a vários tópicos em categorias positivas, negativas ou neutras, numa visão básica.
+    </p>
+    <p>
+      A análise de sentimentos tem aplicações em diferentes domínios, incluindo inteligência comercial, política e sociologia. Nos últimos anos, com o advento das redes sociais, microblogs e wikis, houve um crescimento sem precedentes de dados gerados por usuários, prontos para a mineração de sentimentos.
+    </p>
+    <p>
+      Este relatório apresenta os resultados de uma análise de sentimentos na mídia social Instagram, explorando os comentários no perfil do Deputado Federal Átila Lira. Foram analisados 317 comentários e respostas, publicados desde 01 de janeiro de 2024.
+    </p>
+  </section>
+
+  <section id="perfil-analisado">
+    <h2>Tabela 1 – Perfis analisados</h2>
+    <figure>
+      <img src="static/assets/images/tabela1-perfis-analisados.png" alt="Tabela 1 – Perfis analisados">
+      <figcaption>Tabela 1 – Perfis analisados</figcaption>
+    </figure>
+  </section>
+
+  <section id="estatistica-exploratoria">
+    <h2>Análise Estatística Exploratória</h2>
+    <!-- Inclua aqui gráficos extraídos -->
+    <figure>
+      <img src="static/assets/images/distribuicao-sentimentos.png" alt="Distribuição de frequência de sentimentos">
+      <figcaption>Distribuição de frequência de sentimentos</figcaption>
+    </figure>
+    <p>
+      As métricas de engajamento variam conforme o tipo de postagem. Por exemplo, a postagem “Dia dessa mulher maravilhosa…” obteve 87 comentários e 1.029 curtidas, enquanto a do “7° Leilão FAZENDA…” obteve apenas 7 comentários e 311 curtidas.
+    </p>
+    <figure>
+      <img src="static/assets/images/engajamento-exemplos.png" alt="Exemplos de engajamento em postagens">
+      <figcaption>Comparação de engajamento em diferentes postagens</figcaption>
+    </figure>
+    <p>
+      Postagens com fotos ou vídeos tendem a gerar mais curtidas e comentários. O uso de hashtags também aumenta o alcance e o engajamento.
+    </p>
+  </section>
+
+  <section id="analise-qualitativa">
+    <h2>Análise Qualitativa dos Comentários</h2>
+    <p>
+      Polarização política e cultura do elogio são evidentes nos comentários. Há menções frequentes ao impeachment de um juiz da Suprema Corte e diversas felicitações ao deputado, sugerindo tanto mobilização popular quanto possível uso de comentários coordenados.
+    </p>
+    <figure>
+      <img src="static/assets/images/grafico-frequencia-sentimentos.png" alt="Frequência de sentimentos específicos">
+      <figcaption>Frequência de sentimentos específicos</figcaption>
+    </figure>
+    <ul>
+      <li>Confiança: 47</li>
+      <li>Alegria: 37</li>
+      <li>Antecipação: 31</li>
+      <li>Medo e Tristeza: 27 cada</li>
+      <li>Raiva: 20</li>
+      <li>Nojo e Surpresa: 14 cada</li>
+    </ul>
+  </section>
+
+  <section id="correlacao-engajamento">
+    <h2>Correlação Curtidas × Comentários</h2>
+    <figure>
+      <img src="static/assets/images/correlacao-curtidas-comentarios.png" alt="Correlação entre número de comentários e curtidas">
+      <figcaption>Correlação entre número de comentários e curtidas por região</figcaption>
+    </figure>
+    <p>
+      Observa-se correlação positiva: postagens com mais comentários tendem a receber mais curtidas, reforçando a importância do engajamento na visibilidade.
+    </p>
+  </section>
+
+  <section id="bigramas">
+    <h2>Bigramas Mais Frequentes</h2>
+    <figure>
+      <img src="static/assets/images/bigramas-frequentes.png" alt="Bigramas mais frequentes nos comentários">
+      <figcaption>Bigramas mais frequentes nos comentários</figcaption>
+    </figure>
+    <p>
+      Termos como “ao lado”, “um futuro” e “vamos juntos” indicam narrativa participativa e estratégia de proximidade com as bases locais.
+    </p>
+  </section>
+
+  <section id="conclusao">
+    <h2>Conclusão</h2>
+    <p>
+      A comunicação do deputado apresenta equilíbrio entre sentimentos positivos e negativos, com forte ênfase em confiança e engajamento regional. Sugere-se monitorar continuamente as métricas e ajustar a estratégia conforme o perfil de cada base.
+    </p>
+  </section>
+
+  <footer>
+    <p>Relatório gerado em maio de 2025.</p>
+  </footer>
+</body>
+/* Style geral */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background: #f9f9f9;
+}
+
+header, footer {
+  background: #004080;
+  color: #fff;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+h1, h2 {
+  margin: 1rem 0 0.5rem;
+}
+
+section {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+figure {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+figure img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+figcaption {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+ul {
+  list-style: disc inside;
+  margin: 1rem 0;
+}
+
+footer p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+</html>

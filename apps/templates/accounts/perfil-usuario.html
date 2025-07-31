@@ -1,0 +1,66 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Meu Perfil{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding-top: 90px;">
+
+  <h4 class="c-grey-900 mB-30">Perfil do Usuário</h4>
+  <div class="row mB-20">
+    <div class="col-md-12 text-right">
+      <a href="{{ url_for('authentication_blueprint.editar_perfil') }}" class="btn btn-primary">
+        <i class="ti-pencil mR-5"></i> Editar Perfil
+      </a>
+    </div>
+  </div>
+  <div class="row">
+    <!-- Dados Pessoais -->
+    <div class="col-md-4">
+      <div class="bd bgc-white p-20 text-center">
+        <img src="{{ usuario.avatar_url }}" class="bdrs-50p w-100px mB-20">
+        <h5>{{ usuario.username }}</h5>
+        <p class="mB-5">{{ usuario.email }}</p>
+        <span class="badge badge-primary">{{ usuario.perfil }}</span>
+      </div>
+    </div>
+
+    <!-- Notificações -->
+    <div class="col-md-4">
+      <div class="bd bgc-white p-20">
+        <h6>Notificações</h6>
+        <ul class="list-unstyled mT-20">
+          {% for n in notificacoes %}
+          <li class="mB-15">
+            <i class="ti-bell c-orange-500 mR-10"></i>
+            <strong>{{ n.titulo }}</strong><br>
+            <small class="c-grey-600">{{ n.hora }}</small>
+          </li>
+          {% else %}
+          <li><small>Nenhuma notificação recente.</small></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Mensagens -->
+    <div class="col-md-4">
+      <div class="bd bgc-white p-20">
+        <h6>Mensagens</h6>
+        <ul class="list-unstyled mT-20">
+          {% for m in mensagens %}
+          <li class="mB-15">
+            <i class="ti-email c-blue-500 mR-10"></i>
+            <strong>{{ m.assunto }}</strong> <br>
+            <small class="c-grey-600">De {{ m.de }} – {{ m.hora }}</small>
+          </li>
+          {% else %}
+          <li><small>Sem mensagens no momento.</small></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block javascripts %}{% endblock javascripts %}

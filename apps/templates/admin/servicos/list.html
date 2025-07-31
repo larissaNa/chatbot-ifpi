@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid">
+  <h4 class="c-grey-900 mT-10 mB-30">Serviços Cadastrados</h4>
+  <a href="{{ url_for('admin_blueprint.create_service') }}" class="btn btn-primary mB-20">Novo Serviço</a>
+  <div class="bgc-white bd bdrs-3 p-20 mB-20">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Endpoint</th>
+          <th>Tipo</th>
+          <th>Crédito</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for servico in servicos %}
+        <tr>
+          <td>{{ servico.nome }}</td>
+          <td>{{ servico.endpoint_api }}</td>
+          <td>{{ servico.tipo_conteudo }}</td>
+          <td>{{ servico.custo_credito }}</td>
+          <td>{{ 'Ativo' if servico.ativo else 'Inativo' }}</td>
+          <td class="text-center">
+            <a href="{{ url_for('admin_blueprint.edit_service', id=servico.id) }}"
+                                class="btn btn-sm btn-warning me-1" title="Editar">
+                                <i class="ti-pen"></i>
+            </a>
+
+            <a href="{{ url_for('admin_blueprint.delete_service', id=servico.id) }}"
+                                class="btn btn-sm btn-danger me-1" title="Editar">
+                                <i class="ti-trash"></i>
+            </a>
+            
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

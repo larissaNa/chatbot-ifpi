@@ -1,0 +1,16 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <h4 class="mb-4">Análise IA — Consulta {{ consulta.id }}</h4>
+
+  <div class="mb-3">
+    <h5>Raw JSON de Análise</h5>
+    <pre class="bg-light p-3" style="overflow-x: auto; max-height: 70vh;">
+{{ analysis_json | tojson(indent=2) }}
+    </pre>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}{% endblock %}

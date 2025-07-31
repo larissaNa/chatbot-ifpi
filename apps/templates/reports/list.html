@@ -1,0 +1,17 @@
+{% extends 'layouts/base.html' %}
+{% block content %}
+  <h3>Meus Relatórios</h3>
+  <a href="{{ url_for('reports.novo_relatorio') }}" class="btn btn-primary mb-3">+ Novo Relatório</a>
+  <ul class="list-group">
+    {% for r in relatorios %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        Relatório #{{ r.id }} — {{ r.criado_em.strftime('%d/%m/%Y %H:%M') }}
+        <a href="data:application/pdf;base64,{{ r.conteudo_base64 }}"
+           download="relatorio-{{ r.id }}.pdf"
+           class="btn btn-sm btn-outline-secondary">
+          Download
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}

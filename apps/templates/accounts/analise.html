@@ -1,0 +1,394 @@
+<div class="container-fluid mt-4">
+    <h4 class="mb-4">Análise — Conta: {{ consulta.tipo_conteudo }} de @{{ consulta.conta.nome_usuario }} | Período:  {{ consulta.data_inicio.strftime("%d/%m/%Y") }} a {{consulta.data_fim.strftime("%d/%m/%Y")}}</h4>
+    <div class="row mb-5">
+       {% set principais = [
+          'profile_followers',
+          'profile_followings',
+          'profile_followers_growth_percent',
+          'profile_performance_index',
+          'profile_engagement'
+        ] %}
+
+        {% for row in principais|batch(3, none) %}
+    <div class="row">
+      {% for key in row %}
+        {% if key %}
+          <div class="col-12 col-md-4 mb-3">
+            <div class="layers bd bgc-blue p-20">
+              <div class="layer w-100 mB-10">
+                {% if key in kpi.keys() %}
+                  <h6 class="lh-1">{{ kpi[key].title }}</h6>
+                {% else %}
+                <h6 class="lh-1">{{key}}</h6>
+                {% endif %}
+              </div>
+              <div class="layer w-100">
+                <div class="peers ai-sb fxw-nw">
+                  <div class="peer peer-greed">
+                    <span id="piechart"></span>
+                  </div>
+                  <div class="peer">
+                    <span class="d-ib lh-0 va-m fw-600 bdrs-10em pX-15 pY-15 bgc-green-50 c-green-500">
+                      {% if key in kpi.keys() %}
+                        {{ kpi[key].formatted_value }}
+                      {% else %}
+                        Undef
+                      {% endif %}
+                      
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endfor %}
+          
+      </div>
+  
+      <div class="row mb-5">
+        <div class="col-md-6 mb-3">
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title">{{ growth.absolute }}</h5>
+              <p class="card-text">Crescimento Absoluto de Seguidores</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title">{{ growth.percent }}&#37;</h5>
+              <p class="card-text">Crescimento Percentual de Seguidores</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <!-- Sentimento Geral -->
+  <div class="row mb-5 w-100">
+    <div class="peer bdL p-20 w-30p@lg+ w-100p@lg- mx-auto w-100">
+      <div class="layers">
+        <div class="layer w-100 justify-content-center">
+          <!-- Pie Charts -->
+          <div class="peers pT-20 mT-20 bdT fxw-nw@lg+ ta-c gap-10 w-100">
+            <div class="peer w-50p">
+              <div class="easy-pie-chart positivos" data-size='100' data-percent="{{sentiment['percent_positive']}}" data-bar-color='#009900'>
+                <span>{{sentiment['percent_positive']}}%</span>
+              </div>
+              <h6 class="fsz-sm">Posts com Sentimento Positivo</h6>
+            </div>
+
+            <div class="peer w-50p ta-c">
+              <div class="easy-pie-chart negativos" data-size='100' data-percent="{{100 - sentiment['percent_positive']}}" data-bar-color='#f44336'>
+                <span>{{100 - sentiment['percent_positive']}} %</span>
+              </div>
+              <h6 class="fsz-sm mt-2">Posts com Sentimento Negativo</h6>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+          
+  </div>
+  
+  <div class="dashboard">
+    <!-- Top 10 -->
+    <div class="column">
+      <div class="column-header">
+        Top 25 – Engajamento
+      </div>
+      <div class="list">
+        <!-- Item 1 -->
+        {% for item in top_engagement %}
+          {% set txt = item.get('message', '') %}
+            <div class="item">
+              <div class="thumb"><img src="{{item['image']}}">  </div>
+              <div class="content">
+                <div class="meta">
+                  <div class="avatar">
+                    <img src="{{avatar_url}}" alt="avatar">
+                  </div>
+                  <div class="username">{{consulta.conta.nome_usuario}}</div>
+                  <div class="time">{{ item.date|format_pt_datetime }}</div>
+                </div>
+                <div class="text">
+                  {{txt}}
+                  {% if txt|length > 100 %}...{% endif %} 
+                </div>
+              </div>
+              <div class="count">
+                {% set eng = item.kpi.get('page_total_engagement_count')
+                       or item.kpi.get('profile_story_total_interactions') %}
+                {{ eng.value if eng else 0 }}
+              </div>
+            </div>
+        {% endfor %}
+      </div>
+    </div>
+  
+    <div class="column">
+      <div class="column-header">
+        Top 25 - Sentimento Positivo
+      </div>
+      <div class="list">
+        <!-- Item 1 -->
+        {% for item in top_positive %}
+          {% set txt = item.get('message', '') %}
+            <div class="item">
+              <div class="thumb"><img src="{{item['image']}}"></div>
+              <div class="content">
+                <div class="meta">
+                  <div class="avatar">
+                    <img src="https://via.placeholder.com/24" alt="avatar">
+                  </div>
+                  <div class="username">{{consulta.conta.nome_usuario}}</div>
+                  <div class="time">{{ item.date|format_pt_datetime }}</div>
+                </div>
+                <div class="text">
+                  {{txt}}
+                  {% if txt|length > 100 %}...{% endif %} 
+                </div>
+              </div>
+              <div class="count">
+                {% set pos = item.kpi.get('post_text_sentiment_pos_count') %}
+                {{ pos.value if pos else 0 }}
+              </div>
+            </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- Top 25 por Sentimento Positivo 
+    {%block content%}
+    <div class="container my-4">
+      <h2 class="mb-3">Sentimento</h2>
+      <canvas id="radarChart" width="200" height="200"></canvas>
+    </div>
+    {% endblock content%}
+  <h5 class="mb-3">Top 25 – Sentimento Positivo</h5>
+  <div class="table-responsive mb-5">
+    <table class="table table-bordered table-hover small">
+      <thead class="table-light">
+        <tr>
+          <th>#</th><th>Tipo</th><th>Data</th><th>Texto</th><th>Qtd. Positivo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in top_positive %}
+        {% set txt = item.get('message', '') %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>
+            {% if item.kpi.get('profile_story_replies') %}Story{% else %}Post{% endif %}
+          </td>
+          <td>{{ item.date }}</td>
+          <td style="max-width:300px;">
+            {{ txt[:100] }}{% if txt|length > 100 %}...{% endif %}
+          </td>
+          {% set pos = item.kpi.get('post_text_sentiment_pos_count') %}
+          <td class="text-center">{{ pos.value if pos else 0 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+   Top 25 por Sentimento Negativo 
+  <h5 class="mb-3">Top 25 – Sentimento Negativo</h5>
+  <div class="table-responsive mb-5">
+    <table class="table table-bordered table-hover small">
+      <thead class="table-light">
+        <tr>
+          <th>#</th><th>Tipo</th><th>Data</th><th>Texto</th><th>Qtd. Negativo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in top_negative %}
+        {% set txt = item.get('message', '') %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>
+            {% if item.kpi.get('profile_story_replies') %}Story{% else %}Post{% endif %}
+          </td>
+          <td>{{ item.date }}</td>
+          <td style="max-width:300px;">
+            {{ txt[:100] }}{% if txt|length > 100 %}...{% endif %}
+          </td>
+          {% set neg = item.kpi.get('post_text_sentiment_neg_count') %}
+          <td class="text-center">{{ neg.value if neg else 0 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  -->
+  <div id="data_words_engagement" data_word = '{{ words_engagement|tojson }}'>
+  </div>
+  <div id="data_words_reach" data_word = '{{ words_reach|tojson }}'>
+  </div>
+  <div id="data_words_positive" data_word = '{{ words_positive|tojson }}'>
+  </div>
+  <div id="data_words_negative" data_word = '{{ words_negative|tojson }}'>
+  </div>
+  <div id="data_words_geral" data_word = '{{ words_geral|tojson }}'>
+</div><br/><br/>
+
+  
+    <!-- Nuvem de Palavras -->
+  <h5 class="mb-4 text-center">Nuvem de Palavras</h5>
+  <div class="col-12">
+      <div id="cloud-geral"
+           data-words='{{ words_geral|tojson }}'
+           class="word-cloud p-3 border" style="width:100%; height:400px; min-height:200px;">
+        </div>
+
+  </div>
+
+  <!--<div class="row mb-5">
+    <div class="col-md-6">
+      <div id="cloud-engagement"
+           data-words='{{ words_engagement|tojson }}'
+           class="word-cloud p-3 border" style="min-height:200px;">
+        </div>
+    </div>
+    <div class="col-md-6">
+      <div id="cloud-reach"
+           data-words='{{ words_reach|tojson }}'
+           class="word-cloud p-3 border" style="min-height:200px;"></div>
+    </div>
+  </div>
+  <div class="row mb-5">
+    <div class="col-md-6">
+      <div id="cloud-positive"
+           data-words='{{ words_positive|tojson }}'
+           class="word-cloud p-3 border" style="min-height:200px;"></div>
+    </div>
+    <div class="col-md-6">
+      <div id="cloud-negative"
+           data-words='{{ words_negative|tojson }}'
+           class="word-cloud p-3 border" style="min-height:200px;"></div>
+    </div>-->
+  </div>
+  <style>
+   
+    .dashboard {
+      display: flex;
+      gap: 20px;
+    }
+    .column {
+      flex: 1;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      height: 600px; /* adjust as needed */
+    }
+    .column-header {
+      background:#e4f5fb;
+      padding: 12px 16px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      color: #333;
+    }
+    .list {
+      background: #e9f7fd;
+      overflow-y: auto;
+      padding: 8px;
+      flex: 1;
+    }
+    .item {
+      display: flex;
+      align-items: flex-start;
+      background: #fff;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .item:last-child {
+      margin-bottom: 0;
+    }
+    .thumb {
+      flex-shrink: 0;
+      width: 60px;
+      height: 60px;
+      background: #ddd;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: #666;
+      margin-right: 12px;
+    }
+    .thumb img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 4px;
+    }
+    .content {
+      flex: 1;
+    }
+    .meta {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #ccc;
+      overflow: hidden;
+      margin-right: 6px;
+    }
+    .avatar img {
+      width: 100%;
+      height: auto;
+    }
+    .username {
+      font-weight: bold;
+      margin-right: 8px;
+      color: #222;
+    }
+    .time {
+      color: #888;
+    }
+    .text {
+      font-size: 0.9rem;
+      line-height: 1.3;
+      color: #333;
+    }
+    .count {
+      flex-shrink: 0;
+      background: #f0f0f0;
+      color: #333;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 12px;
+      margin-left: 12px;
+      font-size: 0.9rem;
+      align-self: center;
+    }
+    /* scrollbar styling (optional) */
+    .list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .list::-webkit-scrollbar-track {
+      background: #f0f4f8;
+    }
+    .list::-webkit-scrollbar-thumb {
+      background: #c1c9d2;
+      border-radius: 3px;
+    }
+  </style>

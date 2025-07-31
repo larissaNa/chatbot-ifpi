@@ -1,0 +1,126 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Editar Perfil{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding-top: 90px;">
+
+  <h4 class="c-grey-900 mB-30">Editar Perfil</h4>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="bd bgc-white p-20">
+        <form method="POST" enctype="multipart/form-data">
+          {{ form.hidden_tag() }}
+
+          <div class="form-group">
+            {{ form.username.label(class="text-dark") }}
+            {{ form.username(class="form-control") }}
+          </div>
+
+          <div class="form-group">
+            {{ form.email.label(class="text-dark") }}
+            {{ form.email(class="form-control") }}
+          </div>
+
+          <div class="form-group">
+            {{ form.perfil.label(class="text-dark") }}
+            {{ form.perfil(class="form-control") }}
+          </div>
+
+          <div class="form-group">
+            <label for="input-avatar">Foto de Perfil</label><br>
+            <img id="preview-avatar" src="{{ usuario.avatar_url or '/static/assets/images/default-avatar.png' }}" class="bdrs-50p mB-10" width="100"><br>
+            <input type="file" id="input-avatar" accept="image/*" class="form-control">
+            <input type="hidden" name="avatar_cortado" id="avatar_cortado">
+          </div>
+
+          <div class="form-group">
+            {{ form.submit(class="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de recorte -->
+  <div class="modal fade" id="modalCrop" tabindex="-1" aria-labelledby="modalCropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Recortar Imagem</h5>
+        </div>
+        <div class="modal-body">
+          <img id="imagem-crop" style="width: 100%;">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="btnRecortar">Recortar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<!-- Cropper.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
+
+<script>
+  let cropper;
+  const inputAvatar = document.getElementById('input-avatar');
+  const imagemCrop = document.getElementById('imagem-crop');
+  const previewAvatar = document.getElementById('preview-avatar');
+  const campoBase64 = document.getElementById('avatar_cortado');
+  const modalCrop = new bootstrap.Modal(document.getElementById('modalCrop'));
+
+  inputAvatar.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      imagemCrop.src = e.target.result;
+      modalCrop.show();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('modalCrop').addEventListener('shown.bs.modal', function () {
+    cropper = new Cropper(imagemCrop, {
+      aspectRatio: 1,
+      viewMode: 1,
+      dragMode: 'move',
+      autoCropArea: 1,
+      responsive: true,
+      cropBoxResizable: false
+    });
+  });
+
+  document.getElementById('modalCrop').addEventListener('hidden.bs.modal', function () {
+    if (cropper) {
+      cropper.destroy();
+      cropper = null;
+    }
+  });
+
+  document.getElementById('btnRecortar').addEventListener('click', function () {
+    const canvas = cropper.getCroppedCanvas({ width: 200, height: 200 });
+    const croppedImage = canvas.toDataURL('image/png');
+    previewAvatar.src = croppedImage;
+    campoBase64.value = croppedImage;
+    modalCrop.hide();
+  });
+</script>
+{% endblock %}
+{% block javascripts %}{% endblock javascripts %}

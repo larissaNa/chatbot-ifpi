@@ -1,0 +1,135 @@
+{% extends "layouts/base.html" %}
+{% block title %}Contas de Redes Sociais{% endblock %}
+{% block content %}
+<div class="container-fluid" style="padding-top: 90px;">
+        <h4>Minhas Contas de Redes Sociais</h4>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="row">
+            <div class="col-md-5">
+                {{ form.nome_usuario.label(class="form-label") }}
+                {{ form.nome_usuario(class="form-control") }}
+                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalBuscarConta">
+                  <i class="ti-search"></i>
+                </button>
+            </div>
+            <div class="col-md-5">
+                {{ form.servico_id.label(class="form-label") }}
+                {{ form.servico_id(class="form-select", id="tipo_conteudo") }}
+                
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                {{ form.submit(class="btn btn-primary btn-loader w-100") }}
+            </div>
+        </div>
+    </form>
+
+    <hr>
+
+    <table class="table mt-4">
+        <thead>
+            <tr>
+                <th>Usuário</th>
+                <th>Serviço</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for conta in contas %}
+            <tr>
+                <td>{{ conta.nome_usuario }}</td>
+                <td>{{ conta.servico.nome }}</td>
+                <td>
+                    <form action="{{ url_for('authentication_blueprint.delete_conta', id=conta.id) }}"
+                        method="POST"
+                        onsubmit="return confirmarExclusaoConta();">
+                    <button class="btn btn-sm btn-danger btn-loader" type="submit">Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3">Nenhuma conta cadastrada.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+    function confirmarExclusaoConta() {
+      return confirm("Tem certeza que deseja excluir esta conta?\n\n⚠️ Todas as consultas e operações de crédito vinculadas a ela também serão removidas permanentemente.");
+    }
+</script>
+<script>
+    function buscarContas() {
+      const redeSocial = document.getElementById('tipo_conteudo').value;
+      const query = document.getElementById('campoBuscaConta').value;
+      
+      if (!query) {
+        alert('Digite um nome para buscar.');
+        return;
+      }
+    
+      fetch(`/buscar_contas?rede=${redeSocial}&query=${query}`)
+        .then(response => response.json())
+        .then(data => {
+          const lista = document.getElementById('resultadoBuscaConta');
+          lista.innerHTML = '';
+          
+          data.resultados.forEach(conta => {
+            const item = document.createElement('li');
+            item.className = 'list-group-item list-group-item-action';
+            item.textContent = conta.nome;
+            item.onclick = function() {
+                document.getElementById('nome_usuario').value = conta.username;
+                fecharModalBuscarConta();
+              };
+            lista.appendChild(item);
+          });
+        })
+        .catch(error => {
+          console.error('Erro na busca:', error);
+          alert('Erro ao buscar contas.');
+        });
+    }
+
+    function fecharModalBuscarConta() {
+        const modalElement = document.getElementById('modalBuscarConta');
+      
+        if (modalElement) {
+          const closeButton = modalElement.querySelector('[data-bs-dismiss="modal"]');
+      
+          if (closeButton) {
+            closeButton.click();
+          } else {
+            // Se não encontrar botão de dismiss, força hide
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+              modalInstance.hide();
+            }
+          }
+        }
+      }
+      
+    </script>
+    
+<div class="modal fade" id="modalBuscarConta" tabindex="-1" aria-labelledby="modalBuscarContaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalBuscarContaLabel">Buscar Conta</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group mb-3">
+            <input type="text" id="campoBuscaConta" class="form-control" placeholder="Digite o nome ou username">
+            <button class="btn btn-primary" type="button" onclick="buscarContas()">Buscar</button>
+          </div>
+          <ul class="list-group" id="resultadoBuscaConta">
+            <!-- resultados vão aqui -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block javascripts %}{% endblock javascripts %}

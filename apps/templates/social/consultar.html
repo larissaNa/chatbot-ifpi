@@ -1,0 +1,36 @@
+{% extends "layouts/base.html" %}
+{% block title %}Consultar{% endblock %}
+{% block content %}
+<div class="container-fluid" style="padding-top: 90px;">
+    <h4>Nova Consulta</h4>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+            {{ form.conta_id.label(class="form-label") }}
+            {{ form.conta_id(class="form-select") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.tipo_conteudo.label(class="form-label") }}
+            {{ form.tipo_conteudo(class="form-control") }}
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                {{ form.data_inicio.label(class="form-label") }}
+                {{ form.data_inicio(class="form-control") }}
+            </div>
+            <div class="col-md-6">
+                {{ form.data_fim.label(class="form-label") }}
+                {{ form.data_fim(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="mt-3">
+            {{ form.submit(class="btn btn-success btn-loader") }}
+        </div>
+    </form>
+</div>
+{% endblock %}
+{% block javascripts %}{% endblock javascripts %}

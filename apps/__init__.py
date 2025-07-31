@@ -10,8 +10,11 @@ from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from importlib import import_module
 from datetime import datetime
+<<<<<<< Updated upstream
 from apps.reports.agents.ifpia import carregar_documentos
 
+=======
+>>>>>>> Stashed changes
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -71,9 +74,13 @@ def create_app(config):
     configure_database(app)
     return app
 
+<<<<<<< Updated upstream
 def inicializar_chatbot():
     try:
         carregar_documentos()
         print("Documentos carregados com sucesso.")
     except Exception as e:
         print(f"Erro ao carregar documentos: {e}")
+=======
+
+>>>>>>> Stashed changes

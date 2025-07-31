@@ -1,0 +1,619 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<style>
+  :root {
+    --primary: #007bff;
+    --secondary: #fff;
+    --bg-header: #f0f7ff;
+    --text-primary: #333;
+    --text-secondary: #666;
+    --border-radius: 4px;
+  }
+  
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    color: var(--text-primary);
+  }
+  
+  .profile-container {
+    
+    margin: 20px auto;
+    padding: 0 15px;
+    border-radius: 8px;
+  }
+  
+  .profile-header {
+    
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: space-between;
+    background: var(--bg-header);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  
+  .profile-info {
+    display: flex;
+    align-items: center;
+  }
+  
+   
+  .profile-avatar .ig-logo {
+    position: relative;
+    top: -30px;    /* ajuste a distância do topo */
+    left: 15px;   /* ajuste a distância da esquerda */
+    width: 32px; /* defina o tamanho que quiser */
+    height: auto;
+    z-index: 2;  /* garante que fique sobre a foto */
+  }
+
+  .profile-avatar .avatar {
+    position: relative;
+    z-index: 1;  /* garante que fique atrás do logo */
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 15px;
+  }
+  
+  .profile-text .name {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+  
+  .profile-text .external-link {
+    text-decoration: none;
+    margin-left: 8px;
+    font-size: 1rem;
+  }
+  
+  .profile-text .handle {
+    margin: 4px 0;
+    color: var(--text-secondary);
+  }
+  
+  .profile-text .description {
+    margin: 8px 0;
+    line-height: 1.4;
+  }
+  
+  .profile-text .meta {
+    margin: 4px 0;
+    font-size: 0.9rem;
+  }
+  
+  .profile-actions {
+    text-align: right;
+  }
+  
+  .profile-actions .btn {
+    margin: 4px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  
+  .btn-primary {
+    background: var(--primary);
+    color: var(--secondary);
+  }
+  
+  .btn-secondary {
+    background: #e0e0e0;
+    color: var(--text-primary);
+  }
+  
+  .btn-tertiary {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+  }
+  
+  .last-update {
+    margin: 10px 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+  
+  .quick-buttons .btn {
+    margin: 2px;
+  }
+  
+  .profile-metrics {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .metric {
+    flex: 1;
+    background: #fff;
+    padding: 15px;
+    margin: 0 5px;
+    border-radius: var(--border-radius);
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .metric .value {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: bold;
+  }
+  
+  .metric .label {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+</style>
+{% block stylesheets %}{% endblock stylesheets %}
+<div class="container-fluid mt-4">
+  <h4 class="mb-4 text-center">Dashboard</h4>
+  <div class="profile-container">
+    <!-- Cabeçalho com info do perfil -->
+    <div class="profile-header">
+      <div class="profile-info">
+        <div class="profile-avatar">
+          <img src="/static/assets/images/instagram_logo.webp" alt="Instagram" class="ig-logo">
+          <img src={{avatar_url}} alt="Profile" class="avatar">
+        </div>
+        <div class="profile-text">
+          <h1 class="name">
+            {{resultado.dados['metadata']['profile_name']}}
+            <a href = "https://www.instagram.com/{{consulta.conta.nome_usuario}}" class="external-link" title="Ver perfil externo">↗</a>
+          </h1>
+          <p class="handle">@{{consulta.conta.nome_usuario}}</p>
+          <p class="description">
+            Perfil
+          </p>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+  &nbsp
+  <!-- Nav tabs -->
+  <ul class="nav nav-tabs" id="resultadosTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active"
+              id="tab-resultados-tab"
+              data-bs-toggle="tab"
+              data-bs-target="#tab-resultados"
+              type="button" role="tab"
+              aria-controls="tab-resultados"
+              aria-selected="true">
+        Resultados
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link"
+              id="tab-analise-tab"
+              data-bs-toggle="tab"
+              data-bs-target="#tab-analise"
+              type="button" role="tab"
+              aria-controls="tab-analise"
+              aria-selected="false">
+        Análise Gráfica
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link"
+              id="tab-relatorio-tab"
+              data-bs-toggle="tab"
+              data-bs-target="#tab-relatorio"
+              type="button" role="tab"
+              aria-controls="tab-relatorio"
+              aria-selected="false">
+        Relatório
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab panes -->
+  <div class="tab-content mt-3" id="resultadosTabsContent">
+    <!-- === Aba de Resultados (sua tabela atual) === -->
+    <div class="tab-pane consultafade show active"
+         id="tab-resultados"
+         role="tabpanel"
+         aria-labelledby="tab-resultados-tab">
+
+      {% if resultado.dados.data.posts %}
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle small">
+          <thead class="table-light">
+            <tr>
+              {% for h in header[task] %}
+              <th>{{h}}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for post in resultado.dados.data.posts %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <img src="{{ avatar_url }}" alt="avatar"
+                       class="rounded-circle me-2"
+                       style="width:32px;height:32px">
+                  <a href="{{ post.link }}" target="_blank">
+                    {{ consulta.conta.nome_exibicao or consulta.conta.nome_usuario }}
+                  </a>
+                </div>
+              </td>
+              <td>{{ post.date|format_pt_datetime }}</td>
+              <td style="max-width:300px;">
+                <a href="{{ post.link }}" target="_blank">
+                  {{ post.message[:160] ~ ("..." if post.message|length > 160 else "") }}
+                </a>
+              </td>
+              <td>
+                <img src="{{ post.image }}" alt="Post"
+                     style="height:60px;object-fit:cover">
+              </td>
+              <td class="text-center">
+                {{ post.kpi.page_posts_likes_count.formatted_value
+                   if post.kpi.page_posts_likes_count }}
+              </td>
+              <td class="text-center">
+                {{ post.kpi.page_posts_comments_count.formatted_value
+                   if post.kpi.page_posts_comments_count }}
+              </td>
+              <td class="text-center">
+                {{ post.kpi.page_total_engagement_count.formatted_value
+                   if post.kpi.page_total_engagement_count }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% elif resultado.dados.data.stories %} 
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle small">
+          <thead class="table-light">
+            <tr>
+              {% for h in header['stories'] %}
+              <th>{{h}}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for story in resultado.dados.data.stories %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <img src="{{ avatar_url }}" alt="avatar"
+                       class="rounded-circle me-2"
+                       style="width:32px;height:32px">
+                  <a href="{{ story.link }}" target="_blank">
+                    {{ consulta.conta.nome_exibicao or consulta.conta.nome_usuario }}
+                  </a>
+                </div>
+              </td>
+              <td>{{ story.date }}</td>
+              <td style="max-width:300px;">
+                <a href="{{ story.link }}" target="_blank">
+                  {{ story.message[:160] ~ ("..." if story.message|length > 160 else "")
+                    if story.message }}
+                  {{ story.link if not story.message else "" }}
+                </a>
+              </td>
+              <td>
+                <img src="{{ story.image or ''}}" alt="Story"
+                     style="height:60px;object-fit:cover">
+              </td>
+              <td class="text-center">
+                {{ story.kpi.profile_story_total_interactions.formatted_value
+                   if story.kpi.profile_story_total_interactions }}
+              </td>
+              <td class="text-center">
+                {{ story.kpi.profile_story_profile_visits.formatted_value
+                   if story.kpi.profile_story_profile_visits }}
+              </td>
+              <td class="text-center">
+                {{ story.kpi.profile_story_reach.formatted_value
+                   if story.kpi.profile_story_reach }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-warning">
+        Nenhum post encontrado para este período.
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- === Aba de Análise IA === -->
+    <div class="tab-pane fade"
+         id="tab-analise"
+         role="tabpanel"
+         aria-labelledby="tab-analise-tab">
+      <div id="analysis-content">
+        <div id="container">
+        </div>
+        <p class="text-center text-muted">Carregando análise...</p>
+      </div>
+    </div>
+
+    <!-- === Aba de Relatório === -->
+    <div class="tab-pane fade"
+         id="tab-relatorio"
+         role="tabpanel"
+         aria-labelledby="tab-relatorio-tab">
+      <div id="report-content">
+        <p class="text-center text-muted">Carregando relatório...</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+// Flags para evitar múltiplas requisições
+let analiseLoaded = false;
+let relatorioLoaded = false;
+const consultaId = {{ consulta.id }};
+
+// quando a aba Analise é ativada
+document.getElementById('tab-analise-tab')
+  .addEventListener('shown.bs.tab', () => {
+    if (!analiseLoaded) {
+      fetch(`/consultas/${consultaId}/analise`)
+        .then(r => r.text())
+        .then(html => {
+          const container = document.getElementById('analysis-content');
+          container.innerHTML = html;
+          renderAnalysisWidgets();   // <-- chama logo após injetar o partial
+          analiseLoaded = true;
+        });
+    }
+  });
+
+// Quando a aba “Relatório” for ativada, faz fetch em /consultas/<id>/relatorio
+document
+  .getElementById('tab-relatorio-tab')
+  .addEventListener('shown.bs.tab', () => {
+    if (!relatorioLoaded) {
+      fetch(`/consultas/${consultaId}/relatorio`)
+        .then(r => r.text())
+        .then(html => {
+          document.getElementById('report-content').innerHTML = html;
+          relatorioLoaded = true;
+        });
+    }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+<script>
+  
+  function renderAnalysisWidgets() {
+    // 1) Sentimento Geral
+    /*
+    const canvas = document.getElementById('chart-sentiment-general');
+    let sentiment = {positive:0, negative:0};
+    try {
+      sentiment = JSON.parse(canvas.dataset.sentiment);
+    } catch (e) {}
+    new Chart(canvas.getContext('2d'), {
+      type: 'pie',
+      data: {
+        labels: ['Positivo','Negativo'],
+        datasets: [{
+          data: [sentiment.positive, sentiment.negative]
+        }]
+      },
+      options: { responsive: true }
+    });
+    */
+    const words = document.getElementById('data_words_engagement').getAttribute('data_word');
+    const reach = document.getElementById('data_words_reach').getAttribute('data_word');
+    const positive = document.getElementById('data_words_positive').getAttribute('data_word');
+    const negative = document.getElementById('data_words_negative').getAttribute('data_word');
+    const geral = document.getElementById('data_words_geral').getAttribute('data_word');
+    //const pie = document.getElementById('easy-pie-chart');
+    //const ctx = document.getElementById('radarChart').getContext('2d');
+    $(function() {
+      $(".positivos").easyPieChart({
+
+          //your configuration goes here
+      });
+    });
+    $(function() {
+      $(".negativos").easyPieChart({
+  
+            //your configuration goes here
+      });
+    });
+
+    let data2;
+    try {
+      data2 = JSON.parse(words);
+      data3 = JSON.parse(reach);
+      data4 = JSON.parse(positive);
+      data5 = JSON.parse(negative);
+      data6 = JSON.parse(geral);
+    } catch(e) {
+      data2 = null;
+      data3 = null;
+      data4 = null;
+      data5 = null;
+      data6 = null;
+    }
+    // create a tag (word) cloud chart
+    var chart2 = anychart.tagCloud(data2);
+
+    // set a chart title
+    chart2.title('Palavras com maior engajamento');
+    // set an array of angles at which the words will be laid out
+    chart2.angles([0]);
+    // enable a color range
+    chart2.colorRange(true);
+    // set the color range length
+    chart2.colorRange().length('80%');
+
+    // display the word cloud chart
+    chart2.container("cloud-engagement");
+    chart2.draw();
+    
+    var chart3 = anychart.tagCloud(data3);
+
+    // set a chart title
+    chart3.title('Palavras com maior alcance');
+    // set an array of angles at which the words will be laid out
+    chart3.angles([0]);
+    // enable a color range
+    chart3.colorRange(true);
+    // set the color range length
+    chart3.colorRange().length('80%');
+
+    // display the word cloud chart
+    chart3.container("cloud-reach");
+    chart3.draw();
+
+    var chart4 = anychart.tagCloud(data4);
+
+    // set a chart title
+    chart4.title('Palavras com sentimento positivo');
+    // set an array of angles at which the words will be laid out
+    chart4.angles([0]);
+    // enable a color range
+    chart4.colorRange(true);
+    // set the color range length
+    chart4.colorRange().length('80%');
+
+    // display the word cloud chart
+    chart4.container("cloud-positive");
+    chart4.draw();
+
+    var chart5 = anychart.tagCloud(data5);
+
+    // set a chart title
+    chart5.title('Palavras com sentimento negativo');
+    // set an array of angles at which the words will be laid out
+    chart5.angles([0]);
+    // enable a color range
+    chart5.colorRange(true);
+    // set the color range length
+    chart5.colorRange().length('80%');
+
+    // display the word cloud chart
+    chart5.container("cloud-negative");
+    chart5.draw();
+    
+    var chart6 = anychart.tagCloud(data6);
+
+    // set a chart title
+    chart6.title('Categorizadas');
+    // set an array of angles at which the words will be laid out
+    chart6.angles([0]);
+    // enable a color range
+    chart6.colorRange(true);
+    // set the color range length
+    chart6.colorRange().length('80%');
+
+    // display the word cloud chart
+    chart6.container("cloud-geral");
+    chart6.draw();
+
+    /*new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: {{ sentimento['labels'] | tojson }},
+        datasets: [{
+          label: 'Valores por Categoria',
+          data: {{ sentimento['values'] | tojson }},
+          fill: true,
+          backgroundColor: 'rgba(54, 162, 235, 0.2)',
+          borderColor: 'rgb(54, 162, 235)',
+          pointBackgroundColor: 'rgb(54, 162, 235)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgb(54, 162, 235)'
+        }]
+      },
+      options: {
+        scales: {
+          r: {
+            beginAtZero: true,
+            suggestedMax: 100,
+            ticks: { display: true, stepSize: 20 },
+            angleLines: { display: true },
+            grid: { display: true },
+            pointLabels: { font: { size: 14 } }
+          }
+        },
+        plugins: {
+          legend: { position: 'top' }
+        }
+      },
+      plugins: [{
+        // plugin customizado para desenhar labels nos pontos
+        afterDatasetsDraw(chart) {
+          const ctx = chart.ctx;
+          const offset = [[0, -6], [+12, -6], [+12, +20], [-15, +6], [0, -6]];
+          var idx = 0;
+          chart.data.datasets.forEach((dataset, dsIndex) => {
+            const meta = chart.getDatasetMeta(dsIndex);
+            meta.data.forEach((point, index) => {
+              const value = dataset.data[index];
+              const { x, y } = point.getProps(['x','y'], true);
+              ctx.save();
+              ctx.fillStyle = '#000';
+              ctx.font = 'bold 12px sans-serif';
+              ctx.textAlign = 'right';
+              ctx.textBaseline = 'bottom';
+              offset_x = offset[idx][0];
+              offset_y = offset[idx][1];
+              ctx.fillText(value, x + offset_x, y + offset_y);
+              
+              ctx.restore();
+              idx = (idx + 1) % offset.length;
+            });
+          });
+        }
+      }]
+    });*/
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    let loaded = false;
+    const btn = document.getElementById('tab-analise-tab');
+    btn.addEventListener('shown.bs.tab', () => {
+      if (loaded) return;
+      fetch(`/consultas/${consultaId}/analise`)
+        .then(r => r.text())
+        .then(html => {
+          document.getElementById('analysis-content').innerHTML = html;
+          renderAnalysisWidgets();
+          loaded = true;
+        });
+    });
+  });
+</script>
+
+<script>
+  
+</script>
+{% endblock %}

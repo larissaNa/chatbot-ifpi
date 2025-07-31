@@ -1,0 +1,14 @@
+{# admin/delete.html #}
+{% extends 'layouts/base.html' %}
+{% block title %}Excluir Serviço{% endblock %}
+{% block content %}
+<div class="container-fluid" style="padding-top: 90px;">
+  <h2>Confirmação de Exclusão</h2>
+  <p>Você tem certeza que deseja excluir o serviço <strong>{{ servico.nome }}</strong>?</p>
+  <form method="POST">
+    <button type="submit" class="btn btn-danger btn-loader">Excluir</button>
+    <a href="{{ url_for('authentication_blueprint.list_servicos') }}" class="btn btn-secondary btn-loader">Cancelar</a>
+  </form>
+</div>
+{% endblock %}
+{% block javascripts %}{% endblock javascripts %}

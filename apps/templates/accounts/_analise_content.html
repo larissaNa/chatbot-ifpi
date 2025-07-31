@@ -1,0 +1,38 @@
+{# Partial sem extends, só o body da aba “Análise” #}
+<div class="container-fluid mt-4">
+    <h4 class="mb-4">Análise IA — Consulta {{ consulta.id }}</h4>
+  
+    <!-- KPI Cards, Crescimento e Sentimento (idem anterior) ... -->
+  
+    <!-- Nuvem de Palavras -->
+    <h5 class="mb-4">Nuvem de Palavras</h5>
+    <div class="row mb-5">
+      <div class="col-md-6 mb-4">
+        <h6>Mais Engajamento</h6>
+        <div id="cloud-engagement"
+             data-words='{{ words_engagement|tojson }}'
+             class="p-3 border" style="min-height:200px;"></div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <h6>Mais Alcance</h6>
+        <div id="cloud-reach"
+             data-words='{{ words_reach|tojson }}'
+             class="p-3 border" style="min-height:200px;"></div>
+      </div>
+    </div>
+    <div class="row mb-5">
+      <div class="col-md-6 mb-4">
+        <h6>Mais Sentimento Positivo</h6>
+        <div id="cloud-positive"
+             data-words='{{ words_positive|tojson }}'
+             class="p-3 border" style="min-height:200px;"></div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <h6>Mais Sentimento Negativo</h6>
+        <div id="cloud-negative"
+             data-words='{{ words_negative|tojson }}'
+             class="p-3 border" style="min-height:200px;"></div>
+      </div>
+    </div>
+  </div>
+  
