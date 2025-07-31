@@ -1,0 +1,104 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Perfil do Usuário{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding-top: 90px;">
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<h4 class="c-grey-900 mT-10 mB-30">Minha Conta</h4>
+
+  <!-- Saldo de Créditos -->
+  <div class="row">
+    <div class="col-md-4">
+      <div class="layers bd bgc-white p-20">
+        <div class="layer w-100 mB-10">
+          <h6 class="lh-1">Créditos Disponíveis</h6>
+        </div>
+        <div class="layer w-100">
+          <h3 class="mB-0 c-blue-500">{{ saldo }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simular Compra -->
+  <div class="row mT-30">
+    <div class="col-md-6">
+      <div class="layers bd bgc-white p-20">
+        <div class="layer w-100 mB-10">
+          <h6 class="lh-1">Comprar Créditos (simulação)</h6>
+        </div>
+        <form method="POST">
+          {{ form.hidden_tag() }}
+          <div class="form-group">
+            {{ form.quantidade.label(class="text-normal text-dark") }}
+            {{ form.quantidade(class="form-control", placeholder="Digite a quantidade") }}
+          </div>
+          <div class="form-group">
+            {{ form.submit(class="btn btn-primary btn-color") }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Histórico -->
+  <div class="row mT-30">
+    <div class="col-md-12">
+      <div class="bd bgc-white">
+        <div class="layers">
+          <div class="layer w-100 p-20">
+            <h6 class="lh-1">Histórico de Operações</h6>
+          </div>
+          <div class="layer w-100">
+            <div class="table-responsive p-20">
+              <table id="dataTable" class="table table-striped table-bordered" cellspacing="0" width="100%">
+                <thead class="table-light">
+                  <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Quantidade</th>
+                    <th>Descrição</th>
+                  </tr>
+                </thead>
+                <tbody >
+                  {% for op in operacoes %}
+                  <tr>
+                    <td>{{ op.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{{ op.type.capitalize() }}</td>
+                    <td>{{ op.amount }}</td>
+                    <td>
+                      {% if op.type == 'uso' and op.consulta_id %}
+                          <a href="{{ url_for('authentication_blueprint.resultados', consulta_id=op.consulta_id) }}">
+                              {{ op.description }}
+                          </a>
+                      {% else %}
+                          {{ op.description }}
+                      {% endif %}
+                  </td>
+                  </tr>
+                  {% else %}
+                  <tr><td colspan="4">Nenhuma operação registrada.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block javascripts %}{% endblock javascripts %}

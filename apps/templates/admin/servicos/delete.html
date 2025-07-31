@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid">
+  <h4 class="c-grey-900 mT-10 mB-30">Excluir Serviço</h4>
+  <div class="alert alert-warning">
+    Tem certeza que deseja excluir o serviço <strong>{{ servico.nome }}</strong>?
+  </div>
+  <form method="POST">
+    <button type="submit" class="btn btn-danger">Sim, excluir</button>
+    <a href="{{ url_for('admin_blueprint.list_services') }}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

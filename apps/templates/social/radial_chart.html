@@ -1,0 +1,82 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Gráfico Radial{% endblock %}
+
+{% block content %}
+  <div class="container my-4">
+    <h2 class="mb-3">Gráfico Radial (Radar) — 5 Categorias</h2>
+    <canvas id="radarChart" width="400" height="400"></canvas>
+  </div>
+{% endblock %}
+
+{% block javascripts %}
+  console.log('iniciando radarChart…');
+  {{ super() }}
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const ctx = document.getElementById('radarChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: {{ data['labels'] | tojson }},
+          datasets: [{
+            label: 'Valores por Categoria',
+            data: {{ data['values'] | tojson }},
+            fill: true,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgb(54, 162, 235)',
+            pointBackgroundColor: 'rgb(54, 162, 235)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgb(54, 162, 235)'
+          }]
+        },
+        options: {
+          scales: {
+            r: {
+              beginAtZero: true,
+              suggestedMax: 100,
+              ticks: { display: true, stepSize: 20 },
+              angleLines: { display: true },
+              grid: { display: true },
+              pointLabels: { font: { size: 14 } }
+            }
+          },
+          plugins: {
+            legend: { position: 'top' }
+          }
+        },
+        plugins: [{
+          // plugin customizado para desenhar labels nos pontos
+          afterDatasetsDraw(chart) {
+            const ctx = chart.ctx;
+            const offset = [[0, -6], [+12, -6], [+12, +20], [-15, +6], [0, -6]];
+            var idx = 0;
+            chart.data.datasets.forEach((dataset, dsIndex) => {
+              const meta = chart.getDatasetMeta(dsIndex);
+              meta.data.forEach((point, index) => {
+                const value = dataset.data[index];
+                const { x, y } = point.getProps(['x','y'], true);
+                ctx.save();
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'bottom';
+                offset_x = offset[idx][0];
+                offset_y = offset[idx][1];
+                ctx.fillText(value, x + offset_x, y + offset_y);
+                
+                ctx.restore();
+                idx = (idx + 1) % offset.length;
+              });
+            });
+          }
+        }]
+      });
+    });
+  </script>
+{% endblock %}

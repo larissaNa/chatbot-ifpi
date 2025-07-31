@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Engajamento Social</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            background-color: #212529;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .header-left span {
+            margin: 0 5px;
+        }
+        
+        .header-right {
+            font-size: 12px;
+        }
+        
+        .container {
+            padding: 20px;
+        }
+        
+        .row {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 15px;
+            flex: 1;
+        }
+        
+        .card-header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #555;
+        }
+        
+        .stat-group {
+            margin-bottom: 15px;
+        }
+        
+        .stat-label {
+            color: #777;
+            font-size: 13px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .stat-prev {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .percent-change {
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        
+        .increase {
+            color: #28a745;
+        }
+        
+        .decrease {
+            color: #dc3545;
+        }
+        
+        .graph-container {
+            height: 400px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .graph-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .graph-title {
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .graph-placeholder {
+            height: 330px;
+            background-color: #f8f9fa;
+            border: 1px dashed #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #999;
+        }
+        
+        .top-posts {
+            margin-top: 20px;
+        }
+        
+        .top-posts-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .post-card {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+        }
+        
+        .post-info {
+            flex: 1;
+        }
+        
+        .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .profile-img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .username {
+            font-weight: bold;
+            margin-right: auto;
+        }
+        
+        .post-date {
+            color: #888;
+            font-size: 12px;
+        }
+        
+        .post-content {
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .post-link {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 13px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .post-stats {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+        }
+        
+        .stat-icon {
+            margin-right: 5px;
+        }
+        
+        .post-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 3px;
+            margin-left: 15px;
+        }
+        
+        @media (max-width: 992px) {
+            .row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <span>Social Engagement</span>
+            <span>›</span>
+            <span>Twitter</span>
+        </div>
+        <div class="header-right">
+            Custom Range: Jan 1, 2020 12:00 AM - Dec 31, 2020 11:59 PM, Asia/Kolkata
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="row">
+            <div class="card">
+                <div class="card-header">Outbound Summary</div>
+                
+                <div class="stat-group">
+                    <div class="stat-label">Brand Posts</div>
+                    <div class="stat-value">56.8K <span class="percent-change increase">↑74.9%</span></div>
+                    <div class="stat-prev">Previous Period: 32.5K</div>
+                </div>
+                
+                <div class="stat-group">
+                    <div class="stat-label">Engagements</div>
+                    <div class="stat-value">24.8K <span class="percent-change increase">↑239%</span></div>
+                    <div class="stat-prev">Previous Period: 7.3K</div>
+                </div>
+                
+                <div class="stat-group">
+                    <div class="stat-label">Engagements per Post</div>
+                    <div class="stat-value">0.44 <span class="percent-change increase">↑91.3%</span></div>
+                    <div class="stat-prev">Previous Period: 0.23</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">Engagement Summary</div>
+                
+                <div class="stat-group">
+                    <div class="stat-label">Likes</div>
+                    <div class="stat-value">10.8K <span class="percent-change increase">↑368.6%</span></div>
+                    <div class="stat-prev">Previous Period: 2.3K</div>
+                </div>
+                
+                <div class="stat-group">
+                    <div class="stat-label">Replies</div>
+                    <div class="stat-value">12K <span class="percent-change increase">↑194.2%</span></div>
+                    <div class="stat-prev">Previous Period: 4.1K</div>
+                </div>
+                
+                <div class="stat-group">
+                    <div class="stat-label">Retweets</div>
+                    <div class="stat-value">2K <span class="percent-change increase">↑115.3%</span></div>
+                    <div class="stat-prev">Previous Period: 936</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">Account Summary</div>
+                
+                <div class="stat-group">
+                    <div class="stat-label">Account Followers</div>
+                    <div class="stat-value">1.5K <span class="percent-change increase">↑22.4%</span></div>
+                    <div class="stat-prev">Previous Period: 1.3K</div>
+                </div>
+                
+                <div class="stat-group">
+                    <div class="stat-label">New Account Followers</div>
+                    <div class="stat-value">280 <span class="percent-change increase">↑75.6%</span></div>
+                    <div class="stat-prev">Previous Period: 1.1K</div>
+                </div>
+                
+                <div class="stat-group">
+                    <div class="stat-label">Total Inbound Messages</div>
+                    <div class="stat-value">13K <span class="percent-change increase">↑694.2%</span></div>
+                    <div class="stat-prev">Previous Period: 1.6K</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">Most Engaging Brand Post</div>
+                
+                <div class="post-header">
+                    <img src="/api/placeholder/35/35" alt="Profile" class="profile-img">
+                    <div class="username">DreamMalar</div>
+                    <div class="post-date">May 26, 2020</div>
+                </div>
+                
+                <div class="post-content">
+                    tweet message at 1590372256605
+                </div>
+                
+                <a href="#" class="post-link">https://t.co/FDStD2bh7</a>
+                <a href="#" class="post-link">https://t.co/kJ1QPmhQc</a>
+                
+                <div class="post-stats">
+                    <div class="stat-item">
+                        <span class="stat-icon">🔄</span> 2.6K
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">⭐</span> 2.6K
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">💬</span> 2
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">↗️</span> 84
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">👁️</span> 117.1K
+                    </div>
+                </div>
+                
+                <img src="/api/placeholder/80/80" alt="Post image" class="post-image">
+            </div>
+        </div>
+        
+        <div class="graph-container">
+            <div class="graph-header">
+                <div class="graph-title">Brand Post and Total Engagement</div>
+            </div>
+            
+            <div class="graph-placeholder">
+                Espaço reservado para o gráfico
+            </div>
+        </div>
+        
+        <div class="top-posts">
+            <div class="top-posts-header">
+                <h3>Top 3 Posts</h3>
+            </div>
+            
+            <div class="post-card">
+                <div class="post-info">
+                    <div class="post-header">
+                        <img src="/api/placeholder/35/35" alt="Profile" class="profile-img">
+                        <div class="username">DreamMalar</div>
+                        <div class="post-date">May 26, 2020</div>
+                    </div>
+                    
+                    <div class="post-content">
+                        tweet message at 1590372256605
+                    </div>
+                    
+                    <a href="#" class="post-link">https://t.co/FDStD2bh7</a>
+                    <a href="#" class="post-link">https://t.co/kJ1QPmhQc</a>
+                    
+                    <div class="post-stats">
+                        <div class="stat-item">
+                            <span class="stat-icon">🔄</span> 2.6K
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">⭐</span> 2.6K
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">💬</span> 2
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">↗️</span> 84
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">👁️</span> 117.1K
+                        </div>
+                    </div>
+                </div>
+                
+                <img src="/api/placeholder/80/80" alt="Post image" class="post-image">
+            </div>
+            
+            <div class="post-card">
+                <div class="post-info">
+                    <div class="post-header">
+                        <img src="/api/placeholder/35/35" alt="Profile" class="profile-img">
+                        <div class="username">DreamMalar</div>
+                        <div class="post-date">Oct 28, 2020</div>
+                    </div>
+                    
+                    <div class="post-content">
+                        DreamMalar Shoe
+                    </div>
+                    
+                    <a href="#" class="post-link">https://t.co/yM2zv8M</a>
+                    
+                    <div class="post-stats">
+                        <div class="stat-item">
+                            <span class="stat-icon">🔄</span> 2.1K
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">⭐</span> 2K
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">💬</span> 13
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">↗️</span> 42
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">👁️</span> 736
+                        </div>
+                    </div>
+                </div>
+                
+                <img src="/api/placeholder/80/80" alt="Post image" class="post-image">
+            </div>
+            
+            <div class="post-card">
+                <div class="post-info">
+                    <div class="post-header">
+                        <img src="/api/placeholder/35/35" alt="Profile" class="profile-img">
+                        <div class="username">DreamMalar</div>
+                        <div class="post-date">Oct 31, 2020</div>
+                    </div>
+                    
+                    <div class="post-content">
+                        Gift a plant! https://t.co/eDG5f1joc
+                    </div>
+                    
+                    <div class="post-stats">
+                        <div class="stat-item">
+                            <span class="stat-icon">🔄</span> 739
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">⭐</span> 707
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">💬</span> 14
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">↗️</span> 18
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">👁️</span> 735
+                        </div>
+                    </div>
+                </div>
+                
+                <img src="/api/placeholder/80/80" alt="Post image" class="post-image">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript pode ser adicionado aqui para funcionalidades futuras
+        // como manipulação de dados, filtros, ou para incorporar gráficos
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard de Engajamento Social carregado com sucesso!');
+            
+            // Aqui você pode adicionar seus gráficos posteriormente
+            // Exemplo de como você poderia inicializar seus gráficos:
+            /*
+            function initializeCharts() {
+                // Código para inicializar seus gráficos
+            }
+            
+            initializeCharts();
+            */
+        });
+    </script>
+</body>
+</html>

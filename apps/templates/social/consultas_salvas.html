@@ -1,0 +1,54 @@
+{% extends "layouts/base.html" %}
+{% block title %}Minhas Consultas Salvas{% endblock %}
+{% block content %}
+<div class="container-fluid" style="padding-top: 90px;">
+    <h4>Consultas Salvas</h4>
+    <div class="layer w-100">
+        <div class="table-responsive p-20">
+            <table id="dataTable" class="table table-striped table-bordered" cellspacing="0" width="100%">
+                <thead class="table-light">
+                    <tr>
+                        <th>Conta</th>
+                        <th>Período</th>
+                        <th>Tipo de Conteúdo</th>
+                        <th>Data da Consulta</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in consultas %}
+                    <tr>
+                        <td>{{ c.conta.nome_usuario }} ({{ c.conta.servico.nome }})</td>
+                        <td>{{ c.data_inicio.strftime('%d/%m/%Y') }} - {{ c.data_fim.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ c.tipo_conteudo or 'N/A' }}</td>
+                        <td>{{ c.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td class="text-center">
+                            <div class="mb-3">
+                                <a href="{{ url_for('authentication_blueprint.resultados', consulta_id=c.id) }}"
+                                    class="btn btn-sm btn-primary me-1 btn-loader" title="Ver resultados">
+                                    <i class="ti-eye"></i>
+                                </a>
+                            </div>
+
+                            {% if current_user.is_admin %}
+                            <form action="{{ url_for('authentication_blueprint.delete_consulta', id=c.id) }}"
+                                    method="POST"
+                                    style="display:inline;"
+                                    onsubmit="return confirm('Tem certeza que deseja excluir esta consulta?\n\n⚠️ Todos os dados associados serão removidos.');">
+                                <button type="submit" class="btn btn-sm btn-danger btn-loader" title="Excluir">
+                                <i class="ti-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5">Nenhuma consulta salva.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block javascripts %}{% endblock javascripts %}

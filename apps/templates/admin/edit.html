@@ -1,0 +1,42 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Editar Serviço{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding-top: 90px;">
+  <div class="card">
+    <div class="card-header">
+      <h5 class="card-title">Editar Serviço: {{ servico.nome }}</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+          {{ form.nome.label }} {{ form.nome(class="form-control") }}
+        </div>
+        <div class="form-group">
+          {{ form.endpoint_api.label }} {{ form.endpoint_api(class="form-control") }}
+        </div>
+        <div class="form-group">
+          {{ form.tipo_conteudo.label }} {{ form.tipo_conteudo(class="form-control") }}
+        </div>
+        <div class="form-group">
+          {{ form.custo_credito.label }} {{ form.custo_credito(class="form-control") }}
+        </div>
+        <div class="form-group form-check">
+          {{ form.ativo(class="form-check-input") }} {{ form.ativo.label(class="form-check-label") }}
+        </div>
+        <div class="form-group">
+          {{ form.api_token.label }} {{ form.api_token(class="form-control") }}
+        </div>
+        <div class="form-group">
+          {{ form.api_username.label }} {{ form.api_username(class="form-control") }}
+        </div>
+        <div class="form-group">
+          {{ form.api_password.label }} {{ form.api_password(class="form-control", type="password") }}
+        </div>
+        <button type="submit" class="btn btn-primary btn-loader">Atualizar</button>
+    <a href="{{ url_for('authentication_blueprint.list_servicos') }}" class="btn btn-secondary btn-loader">Cancelar</a>
+  </form>
+</div>
+{% endblock %}
+{% block javascripts %}{% endblock javascripts %}

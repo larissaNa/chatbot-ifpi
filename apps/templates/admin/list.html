@@ -1,0 +1,53 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Serviços{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding-top: 90px;">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">Serviços Cadastrados</h5>
+      <a href="{{ url_for('authentication_blueprint.create_servico') }}" class="btn btn-primary">Novo Serviço</a>
+    </div>
+    <div class="card-body">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Rede</th>
+            <th>API</th>
+            <th>Custo Crédito</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for servico in servicos %}
+            <tr>
+              <td>{{ servico.nome }}</td>
+              <td>{{ servico.tipo_conteudo or "-" }}</td>
+              <td>
+                {% if servico.endpoint_api %}
+                  <a href="{{ servico.endpoint_api }}" target="_blank">{{ servico.endpoint_api }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>{{ "%.2f"|format(servico.custo_credito) }}</td>
+              <td>{{ 'Ativo' if servico.ativo else 'Inativo' }}</td>
+              <td class="text-center">
+                <a href="{{ url_for('authentication_blueprint.edit_servico', id=servico.id) }}"
+                                    class="btn btn-sm btn-warning btn-loader me-1" title="Editar">
+                                    <i class="ti-pencil"></i>
+                </a>
+    
+                <a href="{{ url_for('authentication_blueprint.delete_servico', id=servico.id) }}"
+                                    class="btn btn-sm btn-danger btn-loader me-1" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir este serviço?\n\n⚠️ Todas as contas, consultas e dados associados também serão removidos.');">
+                                    <i class="ti-trash"></i>
+                </a>
+                
+              </td>
+              
+            </tr>
+          {% endfor %}
+{% endblock %}
+{% block javascripts %}{% endblock javascripts %}

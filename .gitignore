@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 normas_diretrizes.pdf
 normas_diretrizes.txt
 venv
@@ -7,3 +8,7 @@ Lib
 Include
 teste2.pdf
 teste2.txt
+=======
+.env
+documentos
+>>>>>>> Stashed changes

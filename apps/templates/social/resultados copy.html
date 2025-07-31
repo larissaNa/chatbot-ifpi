@@ -1,0 +1,61 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <h4 class="mb-4">Resumo dos Posts</h4>
+
+  {% if resultado.dados.data.posts %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover align-middle small">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Autor</th>
+            <th>Data</th>
+            <th>Texto</th>
+            <th>Imagem</th>
+            <th>Likes</th>
+            <th>Comentários</th>
+            <th>Engajamento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for post in resultado.dados.data.posts %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>
+              <div class="d-flex align-items-center">
+                <img src="{{ avatar_url }}"
+     alt="avatar" class="rounded-circle me-2" style="width: 32px; height: 32px;">
+
+                <span><a href="{{ post.link }}" target="_blank"> {{ consulta.conta.nome_exibicao or consulta.conta.nome_usuario }}</a></span>
+
+              </div>
+            </td>
+            <td>{{ post.date }}</td>
+            <td style="max-width: 300px;">
+              <span><a href="{{ post.link }}" target="_blank"> {{ post.message[:160] ~ ("..." if post.message|length > 160 else "") }}</a></span>
+            </td>
+            <td>
+              <img src="{{ post.image }}" alt="Post" style="height: 60px; width: auto; object-fit: cover;">
+            </td>
+            <td class="text-center">
+              {{ post.kpi.page_posts_likes_count.formatted_value if post.kpi.page_posts_likes_count }}
+            </td>
+            <td class="text-center">
+              {{ post.kpi.page_posts_comments_count.formatted_value if post.kpi.page_posts_comments_count }}
+            </td>
+            <td class="text-center">
+              {{ post.kpi.page_total_engagement_count.formatted_value if post.kpi.page_total_engagement_count }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-warning">Nenhum post encontrado para este período.</div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block javascripts %}{% endblock javascripts %}

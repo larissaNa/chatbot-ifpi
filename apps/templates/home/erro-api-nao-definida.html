@@ -1,0 +1,8 @@
+{% extends 'layouts/base.html' %}
+{% block content %}
+<div class="container mt-5 text-center">
+  <h2 class="text-danger">API Não Configurada</h2>
+  <p>O serviço selecionado ainda não possui uma URL de API definida pelo administrador.</p>
+  <a href="{{ url_for('authentication_blueprint.consultar') }}" class="btn btn-primary mt-3">Voltar para consulta</a>
+</div>
+{% endblock %}
