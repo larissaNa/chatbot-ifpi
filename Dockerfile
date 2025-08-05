@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream
-FROM python:3.10
-=======
 FROM python:3.11
->>>>>>> Stashed changes
 
 # set environment variables
 # ENV FLASK_ENV=development
@@ -30,11 +26,7 @@ RUN apt-get update && apt-get install -y \
     fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/*
 
-<<<<<<< Updated upstream
 RUN pip install --no-cache-dir -r requirements.txt
-=======
-RUN pip install -r requirements.txt
->>>>>>> Stashed changes
 
 COPY . .
 

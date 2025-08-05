@@ -1,60 +1,45 @@
-import uuid
-from langgraph.graph import StateGraph, START
-from langgraph.graph.message import add_messages
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.types import interrupt
-from langgraph_supervisor import create_supervisor
-from langchain_core.messages import BaseMessage
-from typing_extensions import TypedDict
-from typing import Annotated
+from apps.reports.agents.supervisor_agent import compiled_supervisor
 
-class StateSchema(TypedDict):
-    messages: Annotated[list[BaseMessage], add_messages]
+thread_id = "web-chat"
+interaction_count = 0
 
-def create_supervisor_graph(llm, agents):
-    supervisor = create_supervisor(
-        model=llm,
-        agents=agents,
-        prompt="""
-        Você é um supervisor inteligente.
+def run_chatbot(user_input: str):
+    global thread_id, interaction_count
 
-        Receba uma pergunta de um usuário e decida QUAL agente deve responder:
+    if not user_input.strip():
+        return "Por favor, digite uma pergunta válida."
+    
+     # reinicia thread_id a cada 30 interações
+    if interaction_count >= 30:
+        from uuid import uuid4
+        thread_id = str(uuid4())
+        interaction_count = 0
 
-        - Se a pergunta for sobre o IFPI [...] → encaminhe para: consulta_institucional.
-        - Se a pergunta for sobre assuntos gerais [...] → use Tavily.
-        """,
-        add_handoff_messages=True,
-        add_handoff_back_messages=True,
-        output_mode="full_history"
-    )
+    config = {"configurable": {"thread_id": "web-chat"}}
+    last_valid_response = ""
+    interaction_count += 1
 
-    compiled_supervisor = supervisor.compile()
-    graph = StateGraph(StateSchema)
-    graph.add_node("supervisor", compiled_supervisor)
-    graph.add_edge(START, "supervisor")
+    try:
+        for chunk in compiled_supervisor.stream(
+            {"messages": [{"role": "user", "content": user_input}]},
+            config=config,
+            stream_mode="values"
+        ):
+            for msg in chunk.get("messages", []):
+                content = getattr(msg, "content", None)
+                if isinstance(content, str) and content.strip():
+                    # Ignorar mensagens técnicas
+                    if any(kw in content.lower() for kw in [
+                        "successfully transferred",
+                        "transferring",
+                        "transferring back",
+                        "enviando para",
+                        "enviado para"
+                    ]):
+                        print(f"[DEBUG] ⚙️ {content}")
+                        continue
+                    last_valid_response = content.strip()
+    except Exception as e:
+        last_valid_response = f"Erro: {str(e)}"
 
-    return graph.compile(checkpointer=MemorySaver())
-
-def run_interactive_loop(compiled_graph):
-    print("Bem vindo ao chatbot IFPIA\n")
-    while True:
-        user_input = input("User: ")
-        if user_input.lower() in ["exit", "quit", "q"]:
-            print("Encerrando...")
-            break
-
-        thread_id = f"scheduler-{uuid.uuid4().hex[:8]}"
-        config = {"configurable": {"thread_id": thread_id}}
-
-        try:
-            for chunk in compiled_graph.stream(
-                {"messages": [{"role": "user", "content": user_input}]},
-                config=config,
-                stream_mode="values"
-            ):
-                for msg in chunk.get("messages", []):
-                    content = getattr(msg, "content", None)
-                    if isinstance(content, str) and content.strip():
-                        msg.pretty_print()
-        except Exception as e:
-            print(f"\nErro na execução: {e}")
+    return last_valid_response
