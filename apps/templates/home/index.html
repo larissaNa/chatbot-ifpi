@@ -225,7 +225,7 @@
 
       const data = await res.json();
       chatBox.removeChild(loadingMsg);
-      createMessageBubble('bot', data.reply);
+      createMessageBubble('bot', data.response);
     } catch (error) {
       chatBox.removeChild(loadingMsg);
       createMessageBubble('bot', '❌ Erro ao se comunicar com o servidor.');
