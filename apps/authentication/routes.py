@@ -20,9 +20,6 @@ from flask_login import (
 )
 # from .models import ResultadoConsulta, db, UserCredits, CreditOperation
 from apps import db, login_manager
-from apps.integracoes.utils import get_instagram_avatar, getpost, salvar_imagem_local, APIKEY_VORTICE
-from apps.integracoes.instagram_connector import InstagramConnector
-from apps.integracoes.clientes import executar_consulta, APINaoDefinida
 from apps.authentication import blueprint
 from apps.authentication.forms import LoginForm, CreateAccountForm, ServicoForm, ConsultaSocialForm, ContaSocialForm, EditProfileForm, SimularCompraForm
 from apps.authentication.models import Users, Servico, ConsultaSocial, ContaSocial, ResultadoConsulta, UserCredits, CreditOperation, db

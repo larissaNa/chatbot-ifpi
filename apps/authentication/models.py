@@ -12,9 +12,6 @@ from apps.authentication.util import hash_pass
 
 from datetime import datetime
 
-from apps.integracoes.clientes import executar_consulta
-
-
 
 class Users(db.Model, UserMixin):
 
