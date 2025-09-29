@@ -1,7 +1,7 @@
 from langchain.chains import RetrievalQA
 from langchain.tools import Tool
-from apps.reports.llm_config import get_llm
-from apps.reports.services.vectorstore_service import get_vectorstore
+from apps.core.llm_config import get_llm
+from apps.core.services.vectorstore_service import get_vectorstore
 
 llm = get_llm()
 vectorstore = get_vectorstore()

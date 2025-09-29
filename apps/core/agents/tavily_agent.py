@@ -1,6 +1,6 @@
 from langchain_tavily import TavilySearch
 from langgraph.prebuilt import create_react_agent
-from apps.reports.llm_config import get_llm
+from apps.core.llm_config import get_llm
 
 llm = get_llm()
 tavily_tool = TavilySearch(max_results=2)
