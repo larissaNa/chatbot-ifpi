@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify, render_template
-from apps.reports.orchestrator import run_chatbot
+from apps.core.orchestrator import run_chatbot
 
-blueprint = Blueprint("reports", __name__)
+blueprint = Blueprint("core", __name__)
+
 
 @blueprint.route("/chatbot", methods=["GET", "POST"])
 def chatbot():

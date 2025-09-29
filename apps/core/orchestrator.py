@@ -1,4 +1,4 @@
-from apps.reports.agents.supervisor_agent import compiled_supervisor
+from apps.core.agents.supervisor_agent import compiled_supervisor
 
 thread_id = "web-chat"
 interaction_count = 0
