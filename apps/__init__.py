@@ -11,6 +11,7 @@ from flask_sqlalchemy import SQLAlchemy
 from importlib import import_module
 from datetime import datetime
 
+
 db = SQLAlchemy()
 login_manager = LoginManager()
 
@@ -68,5 +69,3 @@ def create_app(config):
     register_blueprints(app)
     configure_database(app)
     return app
-
-

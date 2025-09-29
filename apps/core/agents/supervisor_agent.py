@@ -1,11 +1,4 @@
 from langgraph_supervisor import create_supervisor
-from langgraph.graph import StateGraph, START
-from langgraph.graph.message import add_messages
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.types import interrupt
-from langchain_core.messages import BaseMessage
-from typing import Annotated, TypedDict
-
 from .tavily_agent import tavily_agent
 from .consulta_agent import consulta_agent
 
@@ -40,10 +33,4 @@ supervisor = create_supervisor(
     output_mode="full_history"
 )
 
-class StateSchema(TypedDict):
-    messages: Annotated[list[BaseMessage], add_messages]
-
-graph = StateGraph(StateSchema)
-graph.add_node("supervisor", supervisor.compile())
-graph.add_edge(START, "supervisor")
-compiled_supervisor = graph.compile(checkpointer=MemorySaver())
+compiled_supervisor = supervisor.compile()
