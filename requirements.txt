@@ -7,7 +7,7 @@ scikit-learn
 apify-client
 Werkzeug==2.3.7
 jinja2==3.1.2
-flask-login==0.6.2
+flask-login==0.6.3
 flask_migrate==4.0.4
 WTForms==3.0.1
 flask_wtf==1.2.1

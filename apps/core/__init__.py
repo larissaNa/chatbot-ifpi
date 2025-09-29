@@ -5,4 +5,4 @@ Copyright (c) 2019 - present AppSeed.us
 
 from flask import Blueprint
 
-blueprint = Blueprint("reports", __name__, url_prefix="/",template_folder='templates', static_folder='static')
+blueprint = Blueprint("core", __name__, url_prefix="/",template_folder='templates', static_folder='static')
