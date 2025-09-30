@@ -1,4 +1,3 @@
-import uuid
 from langgraph.graph import StateGraph, START
 from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
@@ -19,8 +18,6 @@ graph.add_edge(START, "supervisor")
 memory = MemorySaver()
 graph = graph.compile(checkpointer=memory)
 
-from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
-
 def sanitize_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
     """
     Remove mensagens vazias e listas de mensagens vazias recursivamente.
@@ -29,16 +26,23 @@ def sanitize_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
 
     for msg in messages:
         if isinstance(msg, (HumanMessage, AIMessage)):
-            # transforma list em string
+            # Se o conteúdo é uma string não vazia, mantém
             if isinstance(msg.content, str) and msg.content.strip():
                 sanitized.append(msg)
+
+            # Se o conteúdo é uma lista, junta os elementos em uma string
             elif isinstance(msg.content, list):
-                joined_content = " ".join(str(c).strip() for c in msg.content if c and str(c).strip())
+                joined_content = " ".join(
+                    str(c).strip() for c in msg.content if c and str(c).strip()
+                )
                 if joined_content:
                     msg.content = joined_content
                     sanitized.append(msg)
+
+        # Se o item for uma lista de mensagens, processa recursivamente
         elif isinstance(msg, list):
-            sanitized.extend(sanitize_messages(msg))  # recursivo
+            sanitized.extend(sanitize_messages(msg))
+
     return sanitized
 
 def run_chatbot(user_input: str):
