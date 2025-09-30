@@ -15,3 +15,4 @@ def chatbot():
         return jsonify({"response": response})
 
     return render_template("chatbot.html")  # se for GET
+

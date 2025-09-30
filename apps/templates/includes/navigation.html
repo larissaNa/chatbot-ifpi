@@ -8,21 +8,11 @@
       </li>
     </ul>
     <ul class="nav-right">
-      <li class="search-box">
-        <a class="search-toggle no-pdd-right" href="javascript:void(0);">
-          <i class="search-icon ti-search pdd-right-10"></i>
-          <i class="search-icon-close ti-close pdd-right-10"></i>
-        </a>
-      </li>
-      <li class="search-input">
-        <input class="form-control" type="text" placeholder="Search...">
-      </li>
       <li class="notifications dropdown">
         <span class="counter bgc-red">3</span>
         <a href="" class="dropdown-toggle no-after" data-bs-toggle="dropdown">
           <i class="ti-bell"></i>
         </a>
-
         <ul class="dropdown-menu">
           <li class="pX-20 pY-15 bdB">
             <i class="ti-bell pR-10"></i>
@@ -113,22 +103,10 @@
           {% if current_user.is_authenticated and current_user.is_admin %}
           <li>
             <a href="{{ url_for('authentication_blueprint.list_servicos') }}" class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">
-              <i class="ti-plug p-r-10"></i> Gerenciar Serviços
+              <i class="ti-plug p-r-10"></i> Carregar Documentos
             </a>
           </li>
           {% endif %}
-          <li>
-            <a href="{{ url_for('authentication_blueprint.creditos') }}" class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">
-              <i class="ti-wallet mR-10"></i>
-              <span>Créditos</span>
-            </a>
-          </li>
-          <li>
-            <a href="email.html" class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">
-              <i class="ti-email mR-10"></i>
-              <span>Mensagens</span>
-            </a>
-          </li>
           <li role="separator" class="divider"></li>
           <li>
             <a href="{{ url_for('authentication_blueprint.logout') }}" class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">

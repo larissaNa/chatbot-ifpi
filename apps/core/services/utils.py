@@ -1,4 +1,4 @@
-from langchain_huggingface import HuggingFaceEmbeddings
+from apps.core.llm_config import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -14,7 +14,7 @@ def setup_vectorstore(persist_directory="chatbot", pdf_paths=None):
     # Verifica se a base já existe
     if os.path.exists(persist_directory) and os.listdir(persist_directory):
         print("✅ Base vetorial já existe. Carregando sem adicionar documentos.")
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        embeddings = HuggingFaceEmbeddings()
         vectorstore = Chroma(
             collection_name="baseDeDados",
             embedding_function=embeddings,
