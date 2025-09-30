@@ -46,3 +46,5 @@ apscheduler==3.11.0
 pypdf
 langchain-huggingface
 langchain-chroma
+fastapi
+uvicorn
