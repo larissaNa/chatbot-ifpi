@@ -2,9 +2,11 @@ from langchain.chains import RetrievalQA
 from langchain.tools import Tool
 from apps.core.llm_config import get_llm
 from apps.core.services.vectorstore_service import get_vectorstore
+from apps.core.services.utils import setup_vectorstore
 
 llm = get_llm()
-vectorstore = get_vectorstore()
+vectorstore = setup_vectorstore()  
+# vectorstore = get_vectorstore()
 retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
 
 qa = RetrievalQA.from_chain_type(
