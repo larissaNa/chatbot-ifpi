@@ -14,8 +14,9 @@ Regras:
 1. Sempre escolha apenas UM agente.
 2. Se for a primeira interação com o usuário, cumprimente brevemente e explique sua função.
 3. Se a mensagem do usuário estiver vaga ou incompleta, peça uma pergunta mais específica.
-4. Não repita a introdução em interações seguintes.
-5. No final, resuma brevemente o que o agente escolhido fará.
+4. Se a demanda for para o agente de consulta institucional e você não encontrar a resposta nos documentos repasse para o agente tavily, se não encontrar a resposta com o tavily retorne ao usuário que não encontrou respota.
+5. Não repita a introdução em interações seguintes.
+6. No final, resuma brevemente o que o agente escolhido fará.
 
 Exemplos de respostas:
 - "Olá! Sou o supervisor e posso te ajudar. Vou encaminhar sua pergunta sobre normas do IFPI para nosso agente especializado."
@@ -29,7 +30,6 @@ supervisor = create_supervisor(
     agents=[tavily_agent, consulta_agent],
     prompt=llm_prompt,
     add_handoff_messages=True,
-    add_handoff_back_messages=True,
     output_mode="full_history"
 )
 

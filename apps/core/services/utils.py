@@ -5,11 +5,16 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 import os
 
 def setup_vectorstore(persist_directory="chatbot", pdf_paths=None):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    persist_directory = os.path.join(base_dir,".",".",persist_directory)
+    persist_directory = os.path.abspath(persist_directory)
     if pdf_paths is None:
         pdf_paths = [
             "apps/documentos/normativas.pdf",
-            "apps/documentos/Lei-8812.pdf"
+            "apps/documentos/Lei-8112.pdf"
         ]
+    print(f"[INFO] Diretório de persistência: {persist_directory}")
+    # os.makedirs(persist_directory, exist_ok=True)
 
     # Verifica se a base já existe
     if os.path.exists(persist_directory) and os.listdir(persist_directory):
@@ -53,7 +58,7 @@ def setup_vectorstore(persist_directory="chatbot", pdf_paths=None):
     )
 
     vectorstore.add_documents(all_documents)
-    vectorstore.persist()
+    # vectorstore.persist()
     print(f"[INFO] Base vetorial criada e persistida em '{persist_directory}'.")
 
     return vectorstore
