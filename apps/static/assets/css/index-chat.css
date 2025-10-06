@@ -70,6 +70,26 @@
     border-bottom-right-radius: 0;
   }
 
+  .chat-bubble p {
+  margin: 6px 0;
+}
+
+  .chat-bubble ul, .chat-bubble ol {
+  margin-left: 20px;
+}
+
+.chat-bubble a {
+  color: #4e54c8;
+  text-decoration: underline;
+}
+
+.chat-bubble code {
+  background-color: #f0f0f0;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
   .chat-avatar {
     width: 36px;
     height: 36px;

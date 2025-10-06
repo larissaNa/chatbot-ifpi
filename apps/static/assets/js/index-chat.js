@@ -24,7 +24,12 @@ const form = document.getElementById('chat-form');
       bubble.appendChild(spinner);
       bubble.appendChild(document.createTextNode(' Digitando...'));
     } else {
-      bubble.innerHTML = text;
+      const md = window.markdownit({
+      breaks: true, // respeita quebras de linha
+      linkify: true, // transforma URLs em links
+      });
+      const formattedText = md.render(text || '');
+      bubble.innerHTML = formattedText;
     }
 
     const timestampElem = document.createElement('div');
