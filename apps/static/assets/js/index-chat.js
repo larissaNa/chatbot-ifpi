@@ -55,30 +55,41 @@ const form = document.getElementById('chat-form');
   }
 
   form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const userText = input.value.trim();
-    if (!userText) return;
+  e.preventDefault();
+  const userText = input.value.trim();
+  if (!userText) return;
 
-    createMessageBubble('user', userText);
-    input.value = "";
+  createMessageBubble('user', userText);
+  input.value = "";
 
-    const loadingMsg = createMessageBubble('bot', '', true);
+  const loadingMsg = createMessageBubble('bot', '', true);
 
-    try {
-      const res = await fetch('/chatbot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText })
-      });
+  try {
+    const res = await fetch('/chatbot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userText })
+    });
 
-      const data = await res.json();
-      chatBox.removeChild(loadingMsg);
-      createMessageBubble('bot', data.response);
-    } catch (error) {
-      chatBox.removeChild(loadingMsg);
-      createMessageBubble('bot', '❌ Erro ao se comunicar com o servidor.');
+    const data = await res.json();
+    chatBox.removeChild(loadingMsg);
+
+    // Adiciona resposta final
+    const finalMsg = createMessageBubble('bot', data.response);
+
+    // Adiciona dropdown do pensamento
+    if (data.thoughts) {
+        const dropdown = document.createElement('details');
+        dropdown.className = 'thoughts-dropdown';
+        dropdown.innerHTML = `<summary>🧠 Ver raciocínio do sistema</summary><pre>${data.thoughts}</pre>`;
+        finalMsg.appendChild(dropdown);
     }
-  });
+  } catch (error) {
+    chatBox.removeChild(loadingMsg);
+    createMessageBubble('bot', '❌ Erro ao se comunicar com o servidor.');
+  }
+});
+
 
   document.addEventListener('DOMContentLoaded', () => {
   // Mensagem inicial do bot

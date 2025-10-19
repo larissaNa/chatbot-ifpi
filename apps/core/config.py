@@ -10,4 +10,4 @@ def get_env_var(var):
     return value
 
 TAVILY_API_KEY = get_env_var("TAVILY_API_KEY")
-ANTHROPIC_API_KEY = get_env_var("ANTHROPIC_API_KEY")
+GEMINI_API_KEY = get_env_var("GEMINI_API_KEY")

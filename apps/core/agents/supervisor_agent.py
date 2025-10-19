@@ -1,6 +1,9 @@
 from langgraph_supervisor import create_supervisor
 from .tavily_agent import tavily_agent
 from .consulta_agent import consulta_agent
+from ..llm_config import get_llm
+
+llm = get_llm()
 
 llm_prompt = """
 Você é um supervisor inteligente em um sistema de atendimento.
@@ -26,11 +29,7 @@ Seja claro, direto e evite repetir explicações.
 """
 
 supervisor = create_supervisor(
-    model=tavily_agent.llm,
+    model=llm,
     agents=[tavily_agent, consulta_agent],
-    prompt=llm_prompt,
-    add_handoff_messages=True,
-    output_mode="full_history"
-)
-
-compiled_supervisor = supervisor.compile()
+    prompt=llm_prompt
+).compile()

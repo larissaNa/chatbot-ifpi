@@ -38,7 +38,10 @@ chromadb
 sentence-transformers
 langgraph
 langsmith
-langchain-anthropic
+# langchain-anthropic
+langchain-google-genai
+geopy 
+langchain-google-vertexai
 langgraph-supervisor
 langchain-tavily
 tf-keras

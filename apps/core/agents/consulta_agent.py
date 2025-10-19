@@ -1,12 +1,12 @@
 from langchain.chains import RetrievalQA
 from langchain.tools import Tool
 from apps.core.llm_config import get_llm
-from apps.core.services.vectorstore_service import get_vectorstore
 from apps.core.services.utils import setup_vectorstore
+from langchain_core.messages import AIMessage
+from langgraph.prebuilt import create_react_agent
 
 llm = get_llm()
 vectorstore = setup_vectorstore()  
-# vectorstore = get_vectorstore()
 retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
 
 qa = RetrievalQA.from_chain_type(
@@ -14,14 +14,14 @@ qa = RetrievalQA.from_chain_type(
     retriever=retriever,
     return_source_documents=True
 )
-
+ 
 consulta_tool = Tool(
     name="consulta_institucional",
-    func=lambda q: qa.invoke(q)["result"],
+    func=lambda q: AIMessage(content=qa.invoke(q)["result"]),
     description="Responde perguntas com base nos documentos internos do IFPI."
 )
 
-from langgraph.prebuilt import create_react_agent
+
 consulta_agent = create_react_agent(
     model=llm,
     tools=[consulta_tool],
