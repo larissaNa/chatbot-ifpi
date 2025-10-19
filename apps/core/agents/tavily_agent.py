@@ -2,6 +2,8 @@ import os
 from langchain_tavily import TavilySearch
 from langgraph.prebuilt import create_react_agent
 from apps.core.llm_config import get_llm
+from langchain_core.messages import AIMessage
+from langchain_core.tools import tool
 
 llm = get_llm()
 tavily_api_key = os.getenv("TAVILY_API_KEY")
@@ -12,7 +14,6 @@ if tavily_api_key:
     tools = [tavily_tool]
 else:
     try:
-        from langchain_core.tools import tool
 
         @tool
         def disabled_search(query: str) -> str:

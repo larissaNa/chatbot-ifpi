@@ -11,7 +11,7 @@ from apps import db, login_manager
 from apps.authentication.util import hash_pass
 
 from datetime import datetime
-
+ 
 
 class Users(db.Model, UserMixin):
 

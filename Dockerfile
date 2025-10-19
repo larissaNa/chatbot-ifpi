@@ -5,6 +5,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY requirements.txt .
 
+COPY apps/credenciais.json /apps/credenciais.json
+ENV GOOGLE_APPLICATION_CREDENTIALS="/apps/credenciais.json"
+ENV GOOGLE_CLOUD_PROJECT="gen-lang-client-0261212364"
+
 RUN pip install --upgrade pip
 
 RUN apt-get update && apt-get install -y \
@@ -23,7 +27,7 @@ RUN apt-get update && apt-get install -y \
     fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 COPY . .
 

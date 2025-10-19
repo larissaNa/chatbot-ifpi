@@ -10,8 +10,7 @@ def chatbot():
         user_input = request.json.get("message", "")
         if not user_input:
             return jsonify({"error": "Mensagem não fornecida."}), 400
-
         response = run_chatbot(user_input)
-        return jsonify({"response": response})
+        return jsonify(response)
 
     return render_template("chatbot.html")  # se for GET
