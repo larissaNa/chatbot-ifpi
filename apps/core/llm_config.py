@@ -1,11 +1,17 @@
 from vertexai import init as vertex_init
-from langchain.chat_models import init_chat_model
+from langchain_google_vertexai import ChatVertexAI
 
 def get_llm():
     # Inicializa o Vertex AI com o projeto e localização corretos
     vertex_init(
-        project="gen-lang-client-0261212364",  # substitua pelo ID real do projeto
-        location="us-central1"     # ou a região onde o modelo está habilitado
+        project="gen-lang-client-0261212364",  # substitua pelo ID real do seu projeto
+        location="us-central1"                 # ou a região habilitada
     )
     
-    return init_chat_model("google_vertexai:gemini-2.5-flash", temperature=0)
+    # Inicializa o modelo Gemini 2.5 Flash com LangChain
+    llm = ChatVertexAI(
+        model="gemini-2.5-flash",  # nome exato do modelo
+        temperature=0.0
+    )
+
+    return llm
