@@ -1,0 +1,52 @@
+{% extends "layouts/base.html" %}
+{% block title %} Logs de Processamento {% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between mb-3">
+    <h3>Logs de Processamento</h3>
+    <a href="{{ url_for('authentication_blueprint.admin_docs') }}" class="btn btn-sm btn-link">Voltar</a>
+  </div>
+
+  <table class="table table-hover">
+    <thead>
+      <tr><th>#</th><th>Agente</th><th>Ação</th><th>Documento</th><th>Versão</th><th>Detalhe</th><th>Quando</th></tr>
+    </thead>
+    <tbody>
+      {% for l in logs %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ l.agente }}</td>
+        <td>{{ l.acao }}</td>
+        <td>
+          {% if l.documento_id %}
+            <a href="{{ url_for('authentication_blueprint.admin_doc_detail', doc_id=l.documento_id) }}">{{ l.documento_id }}</a>
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td>{{ l.versao_id or '-' }}</td>
+        <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis;">{{ l.detalhe }}</td>
+        <td>{{ l.criado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center">Sem logs.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if pagination %}
+  <nav aria-label="paginação">
+    <ul class="pagination">
+      {% if pagination.has_prev %}
+      <li class="page-item"><a class="page-link" href="{{ url_for('authentication_blueprint.admin_logs', page=pagination.prev_num) }}">Anterior</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Página {{ pagination.page }} / {{ pagination.pages }}</span></li>
+      {% if pagination.has_next %}
+      <li class="page-item"><a class="page-link" href="{{ url_for('authentication_blueprint.admin_logs', page=pagination.next_num) }}">Próxima</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

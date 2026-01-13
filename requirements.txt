@@ -50,3 +50,8 @@ langchain-huggingface
 langchain-chroma
 fastapi
 uvicorn
+apscheduler==3.11.0
+Flask-Migrate
+beautifulsoup4
+lxml
+pymupdf

@@ -1,0 +1,36 @@
+{% extends "layouts/base.html" %}
+{% block title %} Versões dos Documentos {% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Versões Recentes</h3>
+    <a href="{{ url_for('authentication_blueprint.admin_docs') }}" class="btn btn-sm btn-link">Voltar</a>
+  </div>
+
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>#</th><th>Documento</th><th>Versão</th><th>Status</th><th>Criado</th><th>Indexado</th><th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in versoes %}
+      <tr id="v{{ v.id }}">
+        <td>{{ loop.index }}</td>
+        <td>{{ v.documento.titulo }}</td>
+        <td>{{ v.versao_numero }}</td>
+        <td>{{ v.status_processamento or '-' }}</td>
+        <td>{{ v.criado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td>{{ v.indexado_em and v.indexado_em.strftime('%d/%m/%Y %H:%M') or '-' }}</td>
+        <td>
+          <a class="btn btn-sm btn-primary" href="{{ url_for('authentication_blueprint.admin_doc_detail', doc_id=v.documento_id) }}">Detalhe</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center">Nenhuma versão encontrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

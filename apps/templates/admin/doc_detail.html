@@ -1,0 +1,47 @@
+{% extends "layouts/base.html" %}
+{% block title %} Detalhe do Documento {% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+  <a href="{{ url_for('authentication_blueprint.admin_docs') }}" class="btn btn-link">← Voltar</a>
+  <h3>{{ doc.titulo }}</h3>
+  <p><a href="{{ doc.url }}" target="_blank">{{ doc.url }}</a></p>
+  <p class="text-muted">{{ doc.descricao or '' }}</p>
+
+  <div class="mb-3">
+    <form method="POST" action="{{ url_for('authentication_blueprint.admin_trigger_agent', agente='search_agent') }}" style="display:inline;">
+      <button class="btn btn-outline-primary">Buscar Novas Versões</button>
+    </form>
+    <form method="POST" action="{{ url_for('authentication_blueprint.admin_trigger_agent', agente='extract_agent') }}" style="display:inline;">
+      <button class="btn btn-outline-secondary">Extrair PDFs Pendentes</button>
+    </form>
+  </div>
+
+  <h5>Versões ({{ versoes|length }})</h5>
+  <table class="table">
+    <thead>
+      <tr><th>#</th><th>Versão</th><th>Hash</th><th>Status</th><th>Criado</th><th>Indexado</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+      {% for v in versoes %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ v.versao_numero }}</td>
+        <td>{{ v.hash_conteudo and v.hash_conteudo[:20] or '-' }}</td>
+        <td><span class="badge bg-info">{{ v.status_processamento or 'novo' }}</span></td>
+        <td>{{ v.criado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td>{{ v.indexado_em and v.indexado_em.strftime('%d/%m/%Y %H:%M') or '-' }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('authentication_blueprint.admin_mark_obsolete', versao_id=v.id) }}" style="display:inline;" onsubmit="return confirm('Marcar versão como obsoleta?');">
+            <button class="btn btn-sm btn-outline-danger">Marcar Obsoleta</button>
+          </form>
+          <a class="btn btn-sm btn-outline-success" href="{{ url_for('authentication_blueprint.admin_versions') }}#v{{ v.id }}">Ir para Versões</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center">Sem versões.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

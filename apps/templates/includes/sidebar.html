@@ -1,33 +1,59 @@
-
-      <div class="sidebar">
-        <div class="sidebar-inner">
-          <!-- ### $Sidebar Header ### -->
-          <div class="sidebar-logo">
+<div class="sidebar">
+  <div class="sidebar-inner">
+    <!-- ### $Sidebar Header ### -->
+    <div class="sidebar-logo">
+      <div class="peers ai-c fxw-nw">
+        <div class="peer peer-greed">
+          <a class="sidebar-link td-n" href="/index">
             <div class="peers ai-c fxw-nw">
-              <div class="peer peer-greed">
-                <a class="sidebar-link td-n" href="/index.html">
-                  <div class="peers ai-c fxw-nw">
-                    <div class="peer">
-                      <div class="logo">
-                        <img src="{{ config.ASSETS_ROOT }}/images/logo.png" style='width: 45px;'alt="">
-                      </div>
-                    </div>
-                    <div class="peer peer-greed">
-                      <h5 class="lh-1 mB-0 logo-text">IFPIA - ChatBot</h5>
-                    </div>
-                  </div>
-                </a>
-              </div>
               <div class="peer">
-                <div class="mobile-toggle sidebar-toggle">
-                  <a href="" class="td-n">
-                    <i class="ti-arrow-circle-left"></i>
-                  </a>
+                <div class="logo">
+                  <img src="{{ config.ASSETS_ROOT }}/images/logo.png" style="width: 45px;" alt="">
                 </div>
               </div>
+              <div class="peer peer-greed">
+                <h5 class="lh-1 mB-0 logo-text">IFPIA - ChatBot</h5>
+              </div>
             </div>
+          </a>
+        </div>
+        <div class="peer">
+          <div class="mobile-toggle sidebar-toggle">
+            <a href="#" class="td-n">
+              <i class="ti-arrow-circle-left"></i>
+            </a>
           </div>
-          </ul>
-
         </div>
       </div>
+    </div>
+
+    <!-- ### Sidebar Menu ### -->
+    <ul class="sidebar-menu scrollable pos-r">
+      <li class="nav-item mT-10">
+        <a class="sidebar-link" href="{{ url_for('home_blueprint.index') }}">
+          <span class="icon-holder"><i class="ti-comments"></i></span>
+          <span class="title">Chatbot</span>
+        </a>
+      </li>
+
+      
+      {% if current_user.is_admin %}
+     
+      <li class="nav-item">
+        <a class="sidebar-link" href="{{ url_for('authentication_blueprint.admin_docs') }}">
+          <span class="icon-holder"><i class="ti-folder"></i></span>
+          <span class="title">Gerenciar Documentos</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="sidebar-link" href="{{ url_for('authentication_blueprint.admin_logs') }}">
+          <span class="icon-holder"><i class="ti-folder"></i></span>
+          <span class="title">Vizualisar Logs</span>
+        </a>
+      </li>
+      
+      {% endif %}
+     
+    </ul>
+  </div>
+</div>

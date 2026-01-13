@@ -7,9 +7,16 @@
 {% block content %}
 <link type="text/css" href="{{ config.ASSETS_ROOT }}/css/index-chat.css" rel="stylesheet">
 
-<div class="chat-container bg-white">
+<div id="chat-container" class="chat-container bg-white initial-state">
   <div class="chat-header">
-    Piazinho
+    <div class="d-flex align-items-center">
+       <img src="{{ url_for('static', filename='assets/images/logo.png') }}" alt="Logo" style="height: 40px; width: auto; margin-right: 15px;">
+       <span style="font-size: 1.2rem; font-weight: 600; color: #333;">Chatbot IFPI</span>
+    </div>
+  </div>
+
+  <div id="welcome-message" class="welcome-message">
+      <h1>Olá, sou o Piazinho. Como posso lhe ajudar?</h1>
   </div>
 
   <div id="chat-box" class="chat-body">
@@ -18,13 +25,14 @@
 
   <div class="chat-footer">
   <form id="chat-form" class="d-flex justify-content-center align-items-center gap-3" autocomplete="off">
-    <input type="text" id="user-input" class="form-control flex-grow-1 rounded-pill px-4" placeholder="Digite sua mensagem" autocomplete="off" style="max-width: 80%;" aria-label="Mensagem">
-    <button id="send-btn" type="submit" class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-      <svg id="send-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="white" viewBox="0 0 24 24">
+    <input type="text" id="user-input" class="form-control form-control-lg flex-grow-1 px-4" placeholder="Enviar Mensagem ao Chatbot..." autocomplete="off" style="max-width: 85%;" aria-label="Mensagem">
+    <button id="send-btn" type="submit" class="btn btn-primary btn-lg rounded-circle d-flex align-items-center justify-content-center">
+      <svg id="send-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 24 24">
         <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
       </svg>
     </button>
   </form>
+</div>
 </div>
 
 
