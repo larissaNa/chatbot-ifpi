@@ -27,8 +27,8 @@ RUN apt-get update && apt-get install -y \
     fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/*
 
-COPY . .
-
 RUN pip install -r requirements.txt
+
+COPY . .
 
 CMD ["gunicorn", "--config", "gunicorn-cfg.py", "run:app"]

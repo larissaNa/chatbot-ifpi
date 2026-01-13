@@ -1,0 +1,72 @@
+{% extends "layouts/base.html" %}
+{% block title %} Gerenciar Documentos Oficiais {% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="fw-bold">Fontes Oficiais</h2>
+    <div>
+      <a href="{{ url_for('authentication_blueprint.admin_versions') }}" class="btn btn-sm btn-outline-secondary">Ver Versões</a>
+      <a href="{{ url_for('authentication_blueprint.admin_logs') }}" class="btn btn-sm btn-outline-secondary">Ver Logs</a>
+    </div>
+  </div>
+
+  <!-- Formulário inline de adição (POST para a mesma rota) -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="POST" class="row g-2">
+        <div class="col-md-4">
+          <input type="text" name="titulo" placeholder="Título (ex: Manual do Servidor)" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <input type="url" name="url" placeholder="https://..." class="form-control" required>
+        </div>
+        <div class="col-md-2 d-grid">
+          <button class="btn btn-success">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela de fontes -->
+  <div class="card">
+    <div class="card-body">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>#</th><th>Título</th><th>URL</th><th>Status</th><th>Última Verif.</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc in documentos %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><a href="{{ url_for('authentication_blueprint.admin_doc_detail', doc_id=doc.id) }}">{{ doc.titulo }}</a></td>
+            <td><a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer">{{ doc.url|truncate(60) }}</a></td>
+            <td>
+              {% if doc.ativo %}
+                <span class="badge bg-success">Ativo</span>
+              {% else %}
+                <span class="badge bg-secondary">Inativo</span>
+              {% endif %}
+            </td>
+            <td>{{ doc.ultima_verificacao and doc.ultima_verificacao.strftime('%d/%m/%Y %H:%M') or '-' }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('authentication_blueprint.admin_toggle_doc', doc_id=doc.id) }}" style="display:inline;">
+                <button class="btn btn-sm btn-outline-warning">{{ 'Desativar' if doc.ativo else 'Ativar' }}</button>
+              </form>
+              <a class="btn btn-sm btn-info" href="{{ url_for('authentication_blueprint.admin_doc_detail', doc_id=doc.id) }}">Versões</a>
+              <form method="POST" action="{{ url_for('authentication_blueprint.admin_trigger_agent', agente='search_agent') }}" style="display:inline;">
+                <button class="btn btn-sm btn-primary">Buscar Agora</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-center">Nenhuma fonte cadastrada.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

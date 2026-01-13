@@ -11,3 +11,10 @@ def get_env_var(var):
 
 TAVILY_API_KEY = get_env_var("TAVILY_API_KEY")
 GEMINI_API_KEY = get_env_var("GEMINI_API_KEY")
+
+
+# scheduler compartilhado
+from apscheduler.schedulers.background import BackgroundScheduler
+scheduler = BackgroundScheduler()
+scheduler.start()
+active_jobs = {}
