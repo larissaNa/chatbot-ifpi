@@ -34,6 +34,8 @@ flask_mysqldb
 psycopg2-binary
 langchain
 langchain-community
+langchain-core
+langchain-text-splitters
 chromadb
 sentence-transformers
 langgraph
@@ -43,7 +45,7 @@ langchain-google-genai==3.0.0
 langchain-google-vertexai==3.0.1
 langgraph-supervisor
 langchain-tavily
-tf-keras
+# tf-keras
 apscheduler==3.11.0
 pypdf
 langchain-huggingface
