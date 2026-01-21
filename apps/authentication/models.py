@@ -18,18 +18,15 @@ class Users(db.Model, UserMixin):
     email = db.Column(db.String(64), unique=True)
     password = db.Column(db.LargeBinary)
     perfil = db.Column(db.String(20), default='Usuário')  # Novo campo
+    chat_messages = db.relationship("ChatMessage", backref="user", lazy=True)
 
     def __init__(self, **kwargs):
         for property, value in kwargs.items():
-            # depending on whether value is an iterable or not, we must
-            # unpack it's value (when **kwargs is request.form, some values
-            # will be a 1-element list)
             if hasattr(value, '__iter__') and not isinstance(value, str):
-                # the ,= unpack of a singleton fails PEP8 (travis flake8 test)
                 value = value[0]
 
             if property == 'password':
-                value = hash_pass(value)  # we need bytes here (not plain str)
+                value = hash_pass(value) 
 
             setattr(self, property, value)
     @property
@@ -58,6 +55,8 @@ class DocumentoOficial(db.Model):
     url = db.Column(db.String(500), nullable=False)
     descricao = db.Column(db.Text)
     ativo = db.Column(db.Boolean, default=True)
+    obsoleto = db.Column(db.Boolean, default=False)  # Confirmado pelo usuário
+    sugerido_obsoleto = db.Column(db.Boolean, default=False)  # Sugerido pelo agente
     criado_em = db.Column(db.DateTime, server_default=db.func.now())
     ultima_verificacao = db.Column(db.DateTime)
     ultimo_status_http = db.Column(db.Integer)
@@ -112,7 +111,7 @@ class LogProcessamento(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     versao_id = db.Column(
-        db.Integer, db.ForeignKey("documento_versoes.id"), nullable=False
+        db.Integer, db.ForeignKey("documento_versoes.id"), nullable=True
     )
     agente = db.Column(db.String(64))
     acao = db.Column(db.String(64))
@@ -120,8 +119,23 @@ class LogProcessamento(db.Model):
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
     documento_id = db.Column(
-        db.Integer, db.ForeignKey("documentos_oficiais.id"), nullable=False
+        db.Integer, db.ForeignKey("documentos_oficiais.id"), nullable=True
     )
 
     def __repr__(self):
         return f"<Log {self.id} {self.acao}>"
+
+
+class ChatMessage(db.Model):
+    __tablename__ = "chat_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("Users.id"), nullable=True)
+    thread_id = db.Column(db.String(64), nullable=False)
+    sender = db.Column(db.String(10), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    thoughts = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<ChatMessage {self.id} {self.sender}>"

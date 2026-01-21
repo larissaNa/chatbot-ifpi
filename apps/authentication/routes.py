@@ -216,9 +216,26 @@ def admin_logs():
 @admin_required
 def admin_toggle_doc(doc_id):
     doc = DocumentoOficial.query.get_or_404(doc_id)
+    
+    if doc.obsoleto:
+        flash("Documento marcado como obsoleto não pode ser reativado.", "danger")
+        return redirect(url_for("authentication_blueprint.admin_docs"))
+        
     doc.ativo = not doc.ativo
     db.session.commit()
     flash(f"Documento {'ativado' if doc.ativo else 'desativado'} com sucesso.", "success")
+    return redirect(url_for("authentication_blueprint.admin_docs"))
+
+@blueprint.route("/admin/docs/confirm-obsolete/<int:doc_id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_confirm_obsolete(doc_id):
+    doc = DocumentoOficial.query.get_or_404(doc_id)
+    doc.obsoleto = True
+    doc.sugerido_obsoleto = False # Limpa a sugestão pois já foi confirmado
+    doc.ativo = False # Desativa automaticamente
+    db.session.commit()
+    flash("Documento marcado como obsoleto definitivamente.", "success")
     return redirect(url_for("authentication_blueprint.admin_docs"))
 
 @blueprint.route("/admin/versions/mark-obsolete/<int:versao_id>", methods=["POST"])

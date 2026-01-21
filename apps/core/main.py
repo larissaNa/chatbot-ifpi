@@ -14,7 +14,7 @@ graph = StateGraph(StateSchema)
 graph.add_node("supervisor", supervisor)
 graph.add_edge(START, "supervisor")
 
-# memória de curto prazo (só vive enquanto o processo roda)
+# memória de curto prazo 
 memory = MemorySaver()
 graph = graph.compile(checkpointer=memory)
 
