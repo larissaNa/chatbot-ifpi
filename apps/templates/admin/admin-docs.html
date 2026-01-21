@@ -6,8 +6,8 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="fw-bold">Fontes Oficiais</h2>
     <div>
-      <a href="{{ url_for('authentication_blueprint.admin_versions') }}" class="btn btn-sm btn-outline-secondary">Ver Versões</a>
-      <a href="{{ url_for('authentication_blueprint.admin_logs') }}" class="btn btn-sm btn-outline-secondary">Ver Logs</a>
+      <a href="{{ url_for('authentication_blueprint.admin_versions') }}" class="btn btn-sm btn-secondary">Ver Versões</a>
+      <a href="{{ url_for('authentication_blueprint.admin_logs') }}" class="btn btn-sm btn-secondary">Ver Logs</a>
     </div>
   </div>
 
@@ -44,7 +44,11 @@
             <td><a href="{{ url_for('authentication_blueprint.admin_doc_detail', doc_id=doc.id) }}">{{ doc.titulo }}</a></td>
             <td><a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer">{{ doc.url|truncate(60) }}</a></td>
             <td>
-              {% if doc.ativo %}
+              {% if doc.obsoleto %}
+                <span class="badge bg-danger">Obsoleto</span>
+              {% elif doc.sugerido_obsoleto %}
+                <span class="badge bg-warning text-dark">Sugerido Obsoleto</span>
+              {% elif doc.ativo %}
                 <span class="badge bg-success">Ativo</span>
               {% else %}
                 <span class="badge bg-secondary">Inativo</span>
@@ -52,9 +56,18 @@
             </td>
             <td>{{ doc.ultima_verificacao and doc.ultima_verificacao.strftime('%d/%m/%Y %H:%M') or '-' }}</td>
             <td>
+              {% if not doc.obsoleto %}
               <form method="POST" action="{{ url_for('authentication_blueprint.admin_toggle_doc', doc_id=doc.id) }}" style="display:inline;">
-                <button class="btn btn-sm btn-outline-warning">{{ 'Desativar' if doc.ativo else 'Ativar' }}</button>
+                <button class="btn btn-sm btn-warning">{{ 'Desativar' if doc.ativo else 'Ativar' }}</button>
               </form>
+              {% endif %}
+              
+              {% if doc.sugerido_obsoleto and not doc.obsoleto %}
+              <form method="POST" action="{{ url_for('authentication_blueprint.admin_confirm_obsolete', doc_id=doc.id) }}" style="display:inline;">
+                <button class="btn btn-sm btn-danger" title="Confirmar que documento está obsoleto">Confirmar Obsolescência</button>
+              </form>
+              {% endif %}
+
               <a class="btn btn-sm btn-info" href="{{ url_for('authentication_blueprint.admin_doc_detail', doc_id=doc.id) }}">Versões</a>
               <form method="POST" action="{{ url_for('authentication_blueprint.admin_trigger_agent', agente='search_agent') }}" style="display:inline;">
                 <button class="btn btn-sm btn-primary">Buscar Agora</button>
