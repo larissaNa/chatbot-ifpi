@@ -69,8 +69,8 @@
               {% endif %}
 
               <a class="btn btn-sm btn-info" href="{{ url_for('authentication_blueprint.admin_doc_detail', doc_id=doc.id) }}">Versões</a>
-              <form method="POST" action="{{ url_for('authentication_blueprint.admin_trigger_agent', agente='search_agent') }}" style="display:inline;">
-                <button class="btn btn-sm btn-primary">Buscar Agora</button>
+              <form method="POST" action="{{ url_for('authentication_blueprint.admin_revisar_doc', doc_id=doc.id) }}" style="display:inline;">
+                <button class="btn btn-sm btn-primary">Revisar Agora</button>
               </form>
             </td>
           </tr>

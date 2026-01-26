@@ -75,7 +75,7 @@ def revisar_crenca(dados_revisao: dict) -> dict:
             "proximo_agente": "NENHUM"
         }
         
-    if not emb_old:
+    if len(emb_old) == 0:
          # Se não tinha embeddings antes, é uma "atualização" (ou criação inicial tratada como revisão)
          return {
             "id_crenca": id_crenca,
@@ -97,7 +97,11 @@ def revisar_crenca(dados_revisao: dict) -> dict:
     # Convertendo para tensores/arrays se necessário (util.cos_sim espera tensores ou listas de listas)
     # Calculando matriz de similaridade: Old x New
     try:
-        sim_matrix = util.cos_sim(emb_old, emb_new)
+        # Garante que ambos sejam arrays numpy do mesmo tipo (float32) para evitar erro de dtype
+        emb_old_np = np.array(emb_old, dtype=np.float32)
+        emb_new_np = np.array(emb_new, dtype=np.float32)
+        
+        sim_matrix = util.cos_sim(emb_old_np, emb_new_np)
         # Para cada chunk antigo, qual o chunk novo mais similar?
         # Se o documento é o mesmo, esperamos que cada chunk antigo tenha um correspondente novo muito similar.
         # Se o texto mudou, a similaridade máxima vai cair.

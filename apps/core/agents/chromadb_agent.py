@@ -105,7 +105,18 @@ def executar_persistencia(dados_persistencia: dict) -> dict:
                 meta.update(metadados_globais)
                 meta["id_crenca"] = id_crenca # Chave de ligação
                 meta["timestamp"] = datetime.now().isoformat()
-                metadatas.append(meta)
+                
+                # Sanitize metadata (ChromaDB does not allow None values)
+                sanitized_meta = {}
+                for k, v in meta.items():
+                    if v is None:
+                        sanitized_meta[k] = "" # Replace None with empty string
+                    elif isinstance(v, (str, int, float, bool)):
+                        sanitized_meta[k] = v
+                    else:
+                        sanitized_meta[k] = str(v) # Convert other types to string
+                
+                metadatas.append(sanitized_meta)
             
             # 3. Insere
             if ids:

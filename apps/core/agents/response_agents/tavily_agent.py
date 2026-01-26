@@ -9,12 +9,10 @@ if tavily_api_key:
     tavily_tool = TavilySearch(max_results=2, tavily_api_key=tavily_api_key)
     tools = [tavily_tool]
 else:
-    try:
-
-        @tool
-        def disabled_search(query: str) -> str:
-            return "Web search disabled: missing TAVILY_API_KEY."
-
-        tools = [disabled_search]
-    except Exception:
-        tools = []
+    @tool
+    def disabled_search(query: str) -> str:
+        """Search tool disabled because API key is missing."""
+        return "Web search disabled: missing TAVILY_API_KEY."
+    
+    tavily_tool = disabled_search
+    tools = [tavily_tool]
