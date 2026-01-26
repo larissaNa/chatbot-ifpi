@@ -15,6 +15,7 @@ from apps.authentication import blueprint
 from apps.authentication.forms import LoginForm, CreateAccountForm, EditProfileForm
 from apps.authentication.models import Users, db, DocumentoOficial, DocumentoVersao, ChromaIndexRecord, LogProcessamento
 from apps.authentication.util import verify_pass
+from apps.core.services.revision_service import executar_revisao_documento
 from sqlalchemy import desc
 from flask_sqlalchemy.pagination import Pagination
 
@@ -263,6 +264,22 @@ def admin_trigger_agent(agente):
     db.session.add(log)
     db.session.commit()
     flash(f"Agente '{agente}' acionado manualmente (log criado).", "info")
+    return redirect(request.referrer or url_for("authentication_blueprint.admin_docs"))
+
+
+@blueprint.route("/admin/docs/revisar/<int:doc_id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_revisar_doc(doc_id):
+    try:
+        resultado = executar_revisao_documento(doc_id)
+        if resultado.get("status") == "sucesso":
+            flash(f"Revisão concluída: {resultado.get('acao')} - {resultado.get('justificativa')}", "success")
+        else:
+            flash(f"Erro na revisão: {resultado.get('mensagem')}", "danger")
+    except Exception as e:
+        flash(f"Erro crítico ao executar revisão: {str(e)}", "danger")
+        
     return redirect(request.referrer or url_for("authentication_blueprint.admin_docs"))
 
 

@@ -33,9 +33,9 @@
         <td>{{ v.indexado_em and v.indexado_em.strftime('%d/%m/%Y %H:%M') or '-' }}</td>
         <td>
           <form method="POST" action="{{ url_for('authentication_blueprint.admin_mark_obsolete', versao_id=v.id) }}" style="display:inline;" onsubmit="return confirm('Marcar versão como obsoleta?');">
-            <button class="btn btn-sm btn-outline-danger">Marcar Obsoleta</button>
+            <button class="btn btn-sm btn-danger">Marcar Obsoleta</button>
           </form>
-          <a class="btn btn-sm btn-outline-success" href="{{ url_for('authentication_blueprint.admin_versions') }}#v{{ v.id }}">Ir para Versões</a>
+          <a class="btn btn-sm btn-success" href="{{ url_for('authentication_blueprint.admin_versions') }}#v{{ v.id }}">Ir para Versões</a>
         </td>
       </tr>
       {% else %}
