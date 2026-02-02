@@ -24,3 +24,6 @@ coverage.xml
 data/
 migrations/
 static/
+hf_cache/
+hf_cache_v2/
+chroma_db/

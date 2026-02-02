@@ -47,6 +47,7 @@ def sanitize_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
 
 import uuid
 import time
+import difflib
 
 def run_chatbot(user_input: str, thread_id: str = "1"):
     start_time = time.time()
@@ -126,17 +127,27 @@ def run_chatbot(user_input: str, thread_id: str = "1"):
             else:
                 # Verificação de Duplicação:
                 # Se esta mensagem contém integralmente uma resposta anterior (com tamanho relevante),
-                # assumimos que é uma repetição do Supervisor e a movemos para logs.
+                # ou se é muito similar, assumimos que é uma repetição do Supervisor.
                 is_duplicate = False
                 for prev_ans in answers:
                     # Remove espaços extras para comparação mais robusta
                     clean_prev = prev_ans.strip()
                     clean_curr = content_str.strip()
                     
+                    # 1. Checagem de contêm (existente)
                     if len(clean_prev) > 50 and clean_prev in clean_curr:
-                        logs.append(f"🔄 Repetição filtrada (Supervisor): {content_str}")
+                        logs.append(f"🔄 Repetição filtrada (Supervisor - Contém): {content_str[:50]}...")
                         is_duplicate = True
                         break
+                    
+                    # 2. Checagem de similaridade (fuzzy matching)
+                    # Se as mensagens forem > 60% similares, consideramos repetição
+                    if len(clean_prev) > 30:
+                        similarity = difflib.SequenceMatcher(None, clean_prev, clean_curr).ratio()
+                        if similarity > 0.6:
+                            logs.append(f"🔄 Repetição filtrada (Supervisor - Similaridade {similarity:.2f}): {content_str[:50]}...")
+                            is_duplicate = True
+                            break
                 
                 if not is_duplicate:
                     answers.append(content_str)

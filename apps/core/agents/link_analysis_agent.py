@@ -186,14 +186,16 @@ def _analise_basica_url(url: str) -> dict:
         resultado["tipo_conteudo"] = "HTML_COM_PDF"
         resultado["proximo_agente"] = "AGENTE_EXTRACAO"
     else:
+        # Se não tem PDF, verifica se tem conteúdo textual mínimo
+        # Reduzido de 300 para 50 para aceitar comunicados curtos
         tamanho_texto = len(soup.get_text(strip=True))
-        if tamanho_texto >= 300:
+        if tamanho_texto >= 50:
             resultado["tipo_conteudo"] = "HTML_TEXTO"
             resultado["proximo_agente"] = "AGENTE_EXTRACAO"
         else:
             resultado["tipo_conteudo"] = "INVALIDO"
             resultado["proximo_agente"] = "NENHUM"
-            resultado["observacoes"] += " Conteúdo aparentemente irrelevante ou muito curto."
+            resultado["observacoes"] += " Conteúdo textual insuficiente (< 50 caracteres)."
 
     return resultado
 

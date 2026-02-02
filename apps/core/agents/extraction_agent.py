@@ -141,8 +141,11 @@ def extrair_conteudo(analise: dict):
             "id_documento": str(uuid.uuid4()),
             "titulo": analise.get("titulo"),
             "texto": texto,
-            "paginas_estimadas": paginas,
-            "idioma": idioma or "desconhecido",
+            "metadata": {
+                "paginas_estimadas": paginas,
+                "idioma": idioma or "desconhecido",
+                "tipo_extracao": tipo_extracao
+            }
         }
         documentos.append(doc)
         tipo_extracao_global = tipo_extracao
@@ -161,8 +164,11 @@ def extrair_conteudo(analise: dict):
                 "id_documento": str(uuid.uuid4()),
                 "titulo": item.get("descricao") or analise.get("titulo"),
                 "texto": texto,
-                "paginas_estimadas": paginas,
-                "idioma": idioma or "desconhecido",
+                "metadata": {
+                    "paginas_estimadas": paginas,
+                    "idioma": idioma or "desconhecido",
+                    "tipo_extracao": tipo_extracao
+                }
             }
             documentos.append(doc)
             if not tipo_extracao_global:

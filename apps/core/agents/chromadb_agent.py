@@ -41,8 +41,12 @@ def executar_persistencia(dados_persistencia: dict) -> dict:
 
     # Setup ChromaDB
     try:
-        # Use a local persistence directory
-        persist_dir = os.path.join(os.getcwd(), "chroma_db")
+        # Define o diretório de persistência na raiz do projeto
+        # apps/core/agents/chromadb_agent.py -> ../../../ -> root
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.abspath(os.path.join(base_dir, "..", "..", ".."))
+        persist_dir = os.path.join(project_root, "chroma_db")
+        
         client = chromadb.PersistentClient(path=persist_dir)
         collection = client.get_or_create_collection(name="crencas_institucionais")
     except Exception as e:

@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 services:
   appseed-app:
     container_name: appseed_app
@@ -6,6 +6,9 @@ services:
     env_file: .env
     build: .
     command: flask run --host=0.0.0.0 --port=5005
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - db_network
       - web_network
@@ -13,6 +16,8 @@ services:
       - ./apps:/apps
       - ./apps/static/assets/images:/apps/static/assets/images
       - ./migrations:/migrations
+      - ./chroma_db:/chroma_db
+      - ./hf_cache_v2:/root/.cache/huggingface
   nginx:
     container_name: nginx
     restart: always

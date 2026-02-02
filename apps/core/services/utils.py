@@ -1,64 +1,38 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
 
-def setup_vectorstore(persist_directory="chatbot", pdf_paths=None):
+def setup_vectorstore(persist_directory="chroma_db"):
+    # Define o diretório de persistência na raiz do projeto (mesmo local usado pelos agentes)
+    # apps/core/services/utils.py -> ../../../ -> root
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    persist_directory = os.path.join(base_dir,".",".",persist_directory)
-    persist_directory = os.path.abspath(persist_directory)
-    if pdf_paths is None:
-        pdf_paths = [
-            "apps/documentos/normativas.pdf",
-            "apps/documentos/Lei-8112.pdf"
-        ]
-    print(f"[INFO] Diretório de persistência: {persist_directory}")
-    # os.makedirs(persist_directory, exist_ok=True)
+    project_root = os.path.abspath(os.path.join(base_dir, "..", "..", ".."))
+    persist_path = os.path.join(project_root, persist_directory)
 
-    # Verifica se a base já existe
-    if os.path.exists(persist_directory) and os.listdir(persist_directory):
-        print("✅ Base vetorial já existe. Carregando sem adicionar documentos.")
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        vectorstore = Chroma(
-            collection_name="baseDeDados",
-            embedding_function=embeddings,
-            persist_directory=persist_directory
-        )
-        return vectorstore
+    print(f"\n[DEBUG] --- CONFIGURAÇÃO CHROMA DB ---")
+    print(f"[DEBUG] Base Dir (utils.py): {base_dir}")
+    print(f"[DEBUG] Project Root calculado: {project_root}")
+    print(f"[DEBUG] Diretório de persistência FINAL: {persist_path}")
+    print(f"[DEBUG] ------------------------------\n")
 
-    # Caso contrário, criar nova base
-    print("[INFO] Criando nova base vetorial...")
-    all_documents = []
+    # Inicializa embeddings com o mesmo modelo usado no processing_agent
+    # Garante compatibilidade semântica
+    model_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    embeddings = HuggingFaceEmbeddings(model_name=model_name)
 
-    for path in pdf_paths:
-        abs_path = os.path.abspath(path)
-        if not os.path.exists(abs_path):
-            print(f"[AVISO] Arquivo não encontrado: {abs_path}. Pulando.")
-            continue
-
-        print(f"[INFO] Carregando: {abs_path}")
-        loader = PyPDFLoader(abs_path)
-        pages = loader.load()
-
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
-        docs = text_splitter.split_documents(pages)
-        print(f"[INFO] {len(docs)} trechos extraídos de {os.path.basename(path)}")
-
-        all_documents.extend(docs)
-
-    if not all_documents:
-        raise ValueError("Nenhum documento válido foi carregado para a base vetorial.")
-
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    # Conecta ao ChromaDB existente (ou cria vazio se não existir)
+    # Usa a mesma collection 'crencas_institucionais' usada pelo chromadb_agent
     vectorstore = Chroma(
-        collection_name="baseDeDados",
+        collection_name="crencas_institucionais",
         embedding_function=embeddings,
-        persist_directory=persist_directory
+        persist_directory=persist_path
     )
-
-    vectorstore.add_documents(all_documents)
-    # vectorstore.persist()
-    print(f"[INFO] Base vetorial criada e persistida em '{persist_directory}'.")
+    
+    # NÃO carrega arquivos locais. A base deve ser populada apenas via fluxo de revisão de crenças.
+    try:
+        count = vectorstore._collection.count()
+        print(f"[INFO] Conectado à base vetorial em '{persist_path}'. Documentos indexados: {count}")
+    except Exception as e:
+        print(f"[INFO] Conectado à base vetorial em '{persist_path}'. (Não foi possível contar documentos: {e})")
 
     return vectorstore
