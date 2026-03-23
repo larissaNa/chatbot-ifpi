@@ -52,7 +52,13 @@ class TestProcessingAgent(unittest.TestCase):
         }
         
         print(f"   -> Input simulado: {len(mock_input['documentos'])} documento(s)")
-        resultado = processar_conteudo(mock_input)
+        with patch("apps.core.agents.processing_agent._split_semantic_chunks", return_value=["Chunk 1", "Chunk 2"]), patch(
+            "apps.core.agents.processing_agent._generate_embedding", return_value=[0.1, 0.2, 0.3]
+        ):
+            if hasattr(processar_conteudo, "invoke"):
+                resultado = processar_conteudo.invoke({"extracao": mock_input})
+            else:
+                resultado = processar_conteudo(mock_input)
         
         self.assertEqual(resultado["status"], "sucesso")
         self.assertEqual(len(resultado["chunks"]), 2) # Mock split returns 2 chunks
@@ -64,7 +70,10 @@ class TestProcessingAgent(unittest.TestCase):
     def test_processar_conteudo_input_invalido(self):
         """Testa comportamento com input inválido"""
         print("\n[TESTE] Verificando tratamento de input inválido...")
-        resultado = processar_conteudo({})
+        if hasattr(processar_conteudo, "invoke"):
+            resultado = processar_conteudo.invoke({"extracao": {}})
+        else:
+            resultado = processar_conteudo({})
         self.assertEqual(resultado["status"], "erro")
         self.assertEqual(resultado["proximo_agente"], "NENHUM")
         print("   -> Sucesso: Retornou status de erro conforme esperado.")

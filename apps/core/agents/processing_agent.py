@@ -5,17 +5,29 @@ import uuid
 import hashlib
 from datetime import datetime
 import re
+import os
 
-# Inicializa o modelo de embedding globalmente
-# Usando um modelo multilingue eficiente que funciona bem com português
-try:
-    embedding_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-except Exception as e:
-    print(f"Erro ao carregar modelo de embedding: {e}")
-    embedding_model = None
+_embedding_model = None
+
+
+def _get_embedding_model():
+    global _embedding_model
+    if _embedding_model is not None:
+        return _embedding_model
+
+    model_name = os.getenv(
+        "EMBEDDING_MODEL_NAME",
+        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    )
+    try:
+        _embedding_model = SentenceTransformer(model_name)
+    except Exception:
+        _embedding_model = None
+    return _embedding_model
 
 def _generate_embedding(text: str) -> list:
     """Gera embedding para o texto usando sentence-transformers"""
+    embedding_model = _get_embedding_model()
     if not embedding_model:
         return []
     return embedding_model.encode(text).tolist()

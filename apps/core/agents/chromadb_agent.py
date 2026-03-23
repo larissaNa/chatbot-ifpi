@@ -2,10 +2,7 @@ from langchain_core.tools import tool
 from datetime import datetime
 import json
 import os
-import chromadb
-from chromadb.config import Settings
 
-# Import db and models if available, otherwise use placeholders/mocks
 try:
     from apps import db
     from apps.authentication.models import ChromaIndexRecord, DocumentoVersao, DocumentoOficial
@@ -41,6 +38,8 @@ def executar_persistencia(dados_persistencia: dict) -> dict:
 
     # Setup ChromaDB
     try:
+        import chromadb
+
         # Define o diretório de persistência na raiz do projeto
         # apps/core/agents/chromadb_agent.py -> ../../../ -> root
         base_dir = os.path.dirname(os.path.abspath(__file__))

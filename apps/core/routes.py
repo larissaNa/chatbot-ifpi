@@ -49,7 +49,7 @@ def chatbot():
             traceback.print_exc()
             db.session.rollback()
             return (
-                jsonify({"error": str(e), "traceback": traceback.format_exc()}),
+                jsonify({"error": "Erro interno."}),
                 500,
             )
 

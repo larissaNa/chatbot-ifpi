@@ -1,25 +1,32 @@
 from langgraph.prebuilt import create_react_agent
 from apps.core.agents.response_agents.tavily_agent import tavily_tool
 from apps.core.agents.response_agents.consulta_agent import consulta_tool
-from apps.core.llm_config import get_llm
 from apps.core.agents.link_analysis_agent import buscar_documentos_oficiais, analisar_link
 from apps.core.agents.extraction_agent import extrair_conteudo
 from apps.core.agents.processing_agent import processar_conteudo
 from apps.core.agents.belief_revision_agent import revisar_crenca
 
-llm = get_llm()
+_llm = None
+
+
+def _get_llm():
+    global _llm
+    if _llm is None:
+        from apps.core.llm_config import get_llm
+        _llm = get_llm()
+    return _llm
 
 tavily_agent = create_react_agent(
-    model=llm,
+    model=_get_llm(),
     tools=[tavily_tool] if "tavily_tool" in globals() else [],
     prompt="You perform web searches",
     name="tavily_agent"
 )
-tavily_agent.llm = llm
+tavily_agent.llm = _get_llm()
 
 
 consulta_agent = create_react_agent(
-    model=llm,
+    model=_get_llm(),
     tools=[consulta_tool],
     prompt=(
         "Você é um especialista em documentos e normas internas.\n"
@@ -36,11 +43,11 @@ consulta_agent = create_react_agent(
     ),
     name="consulta_institucional"
 )
-consulta_agent.llm = llm
+consulta_agent.llm = _get_llm()
 
 
 search_agent = create_react_agent(
-    model=llm,
+    model=_get_llm(),
     tools=[buscar_documentos_oficiais],
     prompt="Você busca documentos oficiais (PDFs) do IFPI e retorna uma lista de URLs.",
     name="search_agent"
@@ -48,7 +55,7 @@ search_agent = create_react_agent(
 
 
 extraction_agent = create_react_agent(
-    model=llm,
+    model=_get_llm(),
     tools=[extrair_conteudo],
     prompt=(
         "Você é um Agente de Extração de Conteúdo. "
@@ -61,7 +68,7 @@ extraction_agent = create_react_agent(
 
 
 link_analysis_agent = create_react_agent(
-    model=llm,
+    model=_get_llm(),
     tools=[analisar_link],
     prompt=(
         "Você é um Agente de Análise de Links institucionais. "
@@ -73,7 +80,7 @@ link_analysis_agent = create_react_agent(
 
 
 processing_agent = create_react_agent(
-    model=llm,
+    model=_get_llm(),
     tools=[processar_conteudo],
     prompt=(
         "Você é um Agente de Processamento Semântico. "

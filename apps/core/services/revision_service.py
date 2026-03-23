@@ -1,6 +1,5 @@
 
 import os
-import chromadb
 from datetime import datetime
 from apps import db
 from apps.authentication.models import DocumentoOficial, DocumentoVersao, LogProcessamento, ChromaIndexRecord
@@ -15,6 +14,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.pa
 
 
 def get_chroma_collection():
+    import chromadb
+
     # Define o diretório de persistência na raiz do projeto
     # apps/core/services/revision_service.py -> ../../../ -> root
     base_dir = os.path.dirname(os.path.abspath(__file__))

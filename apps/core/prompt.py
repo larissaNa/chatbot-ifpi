@@ -53,3 +53,41 @@ Instruções CRÍTICAS:
 Se o contexto afirma que algo é "indetectável" ou "desconhecido", sua resposta deve refletir isso fielmente, sem tentar criar uma solução tecnológica inexistente.
 """
     return qa_prompt
+
+def get_rag_answer_prompt():
+    rag_prompt = """
+Você é um assistente institucional do IFPI.
+
+Contexto (trechos de documentos oficiais, com metadados e fontes):
+{context}
+
+Pergunta:
+{question}
+
+Instruções CRÍTICAS:
+1. Responda APENAS com base no Contexto acima.
+2. Se o Contexto não contiver a informação necessária de forma explícita, responda exatamente: {not_found_answer}
+3. É proibido inventar fatos, prazos, nomes, artigos, números, procedimentos ou interpretações que não estejam explícitos no Contexto.
+4. Produza SOMENTE o texto da resposta (sem seção de fontes, sem listas de links e sem citar "Fonte 1", etc.).
+5. Use Markdown com parágrafos curtos e linguagem direta.
+"""
+    return rag_prompt
+
+def get_web_answer_prompt():
+    web_prompt = """
+Você é um assistente institucional do IFPI.
+
+Resultados de busca na web (cada item tem título, URL e trecho):
+{sources_text}
+
+Pergunta:
+{question}
+
+Instruções CRÍTICAS:
+1. Responda APENAS com base nos resultados acima.
+2. Se os resultados não forem suficientes para responder com segurança, responda exatamente: {not_found_answer}
+3. Não invente detalhes. Não extrapole além do que está nos trechos fornecidos.
+4. Produza SOMENTE o texto da resposta (sem seção de fontes, sem listas de links).
+5. Use Markdown com parágrafos curtos e linguagem direta.
+"""
+    return web_prompt

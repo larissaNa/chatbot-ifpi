@@ -52,7 +52,7 @@ def revisar_crenca(dados_revisao: dict) -> dict:
             "status_crenca": "OBSOLETA", # Indica que o conteúdo pode estar desatualizado
             "grau_mudanca": "alto",
             "documentos_afetados": [{"fonte": d.get("url"), "tipo_mudanca": "remocao"} for d in fontes_removidas],
-            "acao_recomendada": "SINALIZAR_OBSOLESCENCIA", # Mudança: não remover automaticamente
+            "acao_recomendada": "SINALIZAR_OBSOLESCENCIA", # não remover automaticamente
             "chunks_processados": [], 
             "metadados_associados": metadados_globais,
             "justificativa_tecnica": f"Fontes originais inacessíveis: {[d.get('url') for d in fontes_removidas]}. Aguardando confirmação do administrador.",

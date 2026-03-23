@@ -38,6 +38,11 @@ def sanitize_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
                 if joined_content:
                     msg.content = joined_content
                     sanitized.append(msg)
+            elif isinstance(msg.content, dict) and "text" in msg.content:
+                text = str(msg.content.get("text") or "").strip()
+                if text:
+                    msg.content = text
+                    sanitized.append(msg)
 
         # Se o item for uma lista de mensagens, processa recursivamente
         elif isinstance(msg, list):
@@ -63,6 +68,7 @@ def run_chatbot(user_input: str, thread_id: str = "1"):
 
     logs = []
     answers  = []
+    structured = None
 
     # Executa o grafo e coleta todas as mensagens finais
     print(f"--- Iniciando execução do grafo para: {user_input[:50]}... ---")
@@ -91,6 +97,10 @@ def run_chatbot(user_input: str, thread_id: str = "1"):
     for msg in new_messages:
         if isinstance(msg, AIMessage):
             content = msg.content
+            if msg.additional_kwargs and isinstance(msg.additional_kwargs.get("structured"), dict):
+                structured = msg.additional_kwargs.get("structured")
+            if msg.additional_kwargs and isinstance(msg.additional_kwargs.get("thoughts"), str):
+                logs.append(msg.additional_kwargs.get("thoughts"))
             
             # Normaliza conteúdo
             if isinstance(content, dict) and "text" in content:
@@ -155,5 +165,24 @@ def run_chatbot(user_input: str, thread_id: str = "1"):
     # --- Saídas separadas ---
     pensamento = "\n".join(logs).strip()
     resposta = "\n".join(answers).strip()
-    
-    return {"response": resposta, "thoughts": pensamento}
+
+    try:
+        from flask import current_app, has_app_context
+        show_thoughts = bool(current_app.config.get("SHOW_THOUGHTS")) if has_app_context() else False
+    except Exception:
+        show_thoughts = False
+
+    payload = {"response": resposta}
+    if structured:
+        payload["status"] = structured.get("status")
+        payload["answer"] = structured.get("answer")
+        payload["sources"] = structured.get("sources")
+        if structured.get("answer") and structured.get("sources") and resposta:
+            payload["response"] = resposta
+
+    if show_thoughts and pensamento:
+        payload["thoughts"] = pensamento
+    else:
+        payload["thoughts"] = None
+
+    return payload

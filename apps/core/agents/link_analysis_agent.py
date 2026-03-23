@@ -74,14 +74,24 @@ def _analise_basica_url(url: str) -> dict:
     resultado["mime_type"] = mime_type
 
     try:
-        doc = DocumentoOficial.query.filter_by(url=url).first()
-        if doc:
-            doc.ultima_verificacao = datetime.utcnow()
-            doc.ultimo_status_http = status_code
-            db.session.commit()
+        try:
+            from flask import has_app_context
+            in_app_context = bool(has_app_context())
+        except Exception:
+            in_app_context = False
+
+        if in_app_context:
+            doc = DocumentoOficial.query.filter_by(url=url).first()
+            if doc:
+                doc.ultima_verificacao = datetime.utcnow()
+                doc.ultimo_status_http = status_code
+                db.session.commit()
     except Exception as e:
         print(f"[analisar_link] erro ao atualizar DocumentoOficial: {e}")
-        db.session.rollback()
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
 
     if status_code != 200:
         resultado["observacoes"] = f"URL inacessível (status HTTP {status_code})."

@@ -7,36 +7,6 @@ current_dir = os.getcwd()
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-# Mock de dependencias externas
-sys.modules["requests"] = MagicMock()
-sys.modules["bs4"] = MagicMock()
-sys.modules["apps.config"] = MagicMock()
-
-# Mock de modulos internos de app 
-sys.modules["apps.authentication"] = MagicMock()
-sys.modules["apps.authentication.models"] = MagicMock()
-sys.modules["apps.db"] = MagicMock()
-
-
-# Mock de decorador para @tool
-def tool_decorator(func):
-    def wrapper(*args, **kwargs):
-        if hasattr(func, "invoke"):
-            return func.invoke(*args, **kwargs)
-        return func(*args, **kwargs)
-    wrapper.invoke = lambda x: func(x)
-    return wrapper
-
-sys.modules["langchain_core.tools"] = MagicMock()
-sys.modules["langchain_core.tools"].tool = tool_decorator
-
-import types
-if "apps" not in sys.modules:
-    m_apps = types.ModuleType("apps")
-    m_apps.__path__ = [os.path.join(current_dir, "apps")]
-    sys.modules["apps"] = m_apps
-
-
 try:
     from apps.core.agents.link_analysis_agent import _analise_basica_url, analisar_link
 except ImportError as e:

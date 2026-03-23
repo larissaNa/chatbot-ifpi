@@ -1,0 +1,12 @@
+[
+  {
+    "pergunta": "Qual é o procedimento para solicitar férias?",
+    "resposta_esperada": "Descreva o procedimento conforme as normas do IFPI presentes nos documentos oficiais.",
+    "fontes": []
+  },
+  {
+    "pergunta": "Qual é o prazo para trancamento de disciplina?",
+    "resposta_esperada": "Informe o prazo conforme as normas acadêmicas do IFPI presentes nos documentos oficiais.",
+    "fontes": []
+  }
+]

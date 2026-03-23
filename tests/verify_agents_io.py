@@ -10,7 +10,21 @@ if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
 
-# Mock bibliotecas externas
+_MOCK_KEYS = [
+    "requests",
+    "bs4",
+    "fitz",
+    "sentence_transformers",
+    "langchain_core",
+    "langchain_core.tools",
+    "langchain_text_splitters",
+    "numpy",
+    "apps.authentication",
+    "apps.authentication.models",
+    "apps.db",
+]
+_ORIGINAL_MODULES = {k: sys.modules.get(k) for k in _MOCK_KEYS}
+
 sys.modules["requests"] = MagicMock()
 sys.modules["bs4"] = MagicMock()
 sys.modules["fitz"] = MagicMock()
@@ -51,6 +65,13 @@ try:
 except ImportError as e:
     print(f"CRITICAL ERROR importing agents: {e}")
     sys.exit(1)
+
+# restaura módulos imediatamente para não poluir outros testes durante o discovery
+for k, v in _ORIGINAL_MODULES.items():
+    if v is None:
+        sys.modules.pop(k, None)
+    else:
+        sys.modules[k] = v
 
 # ==========================================
 # TESTES
