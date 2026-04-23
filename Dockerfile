@@ -5,9 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY requirements.txt .
 
-COPY apps/credenciais.json /apps/credenciais.json
-ENV GOOGLE_APPLICATION_CREDENTIALS="/apps/credenciais.json"
-ENV GOOGLE_CLOUD_PROJECT="gen-lang-client-0261212364"
+# COPY apps/credenciais.json 
+# ENV GOOGLE_APPLICATION_CREDENTIALS="/apps/credenciais.json"
+# ENV GOOGLE_CLOUD_PROJECT="gen-lang-client-0261212364"
 
 RUN pip install --upgrade pip
 

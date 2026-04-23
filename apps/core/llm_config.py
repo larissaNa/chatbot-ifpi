@@ -1,17 +1,25 @@
+import os
+from pathlib import Path
+
 from vertexai import init as vertex_init
 from langchain_google_vertexai import ChatVertexAI
 
-def get_llm():
-    # Inicializa o Vertex AI com o projeto e localização corretos
-    vertex_init(
-        project="gen-lang-client-0261212364",  # substitua pelo ID real do seu projeto
-        location="us-central1"                 # ou a região habilitada
-    )
-    
-    # Inicializa o modelo Gemini 2.5 Flash com LangChain
-    llm = ChatVertexAI(
-        model="gemini-2.5-flash",  # nome exato do modelo
-        temperature=0.0
-    )
 
-    return llm
+def _ensure_google_application_credentials():
+    if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+        return
+
+    local_credentials_path = (Path(__file__).resolve().parents[1] / "credenciais.json")
+    if local_credentials_path.exists():
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(local_credentials_path)
+
+
+def get_llm():
+    _ensure_google_application_credentials()
+
+    project = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("VERTEXAI_PROJECT") or "gen-lang-client-0261212364"
+    location = os.getenv("GOOGLE_CLOUD_LOCATION") or os.getenv("VERTEXAI_LOCATION") or "us-central1"
+
+    vertex_init(project=project, location=location)
+
+    return ChatVertexAI(model="gemini-2.5-flash", temperature=0.0)
