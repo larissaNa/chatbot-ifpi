@@ -8,9 +8,9 @@ if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
 try:
-    from apps.core.agents.link_analysis_agent import _analise_basica_url, analisar_link
+    from apps.core.documents.agents.link_analysis_agent import _analise_basica_url, analisar_link
 except ImportError as e:
-    sys.path.append(os.path.join(current_dir, "apps", "core", "agents"))
+    sys.path.append(os.path.join(current_dir, "apps", "core", "documents", "agents"))
     from link_analysis_agent import _analise_basica_url, analisar_link
 
 class TestLinkAnalysisAgent(unittest.TestCase):
@@ -18,7 +18,7 @@ class TestLinkAnalysisAgent(unittest.TestCase):
     def test_analise_basica_pdf(self):
         """Testa se identifica corretamente um PDF direto"""
         print("\n[TESTE] Verificando identificação de PDF direto...")
-        with patch("apps.core.agents.link_analysis_agent.requests.head") as mock_head:
+        with patch("apps.core.documents.agents.link_analysis_agent.requests.head") as mock_head:
             mock_head.return_value.status_code = 200
             mock_head.return_value.headers = {"Content-Type": "application/pdf"}
             

@@ -7,7 +7,7 @@ sys.path.append('/')
 
 from run import app
 from apps import db
-from apps.authentication.models import DocumentoOficial
+from apps.authentication import DocumentoOficial
 
 class TestObsolescenceLogic(unittest.TestCase):
     def setUp(self):

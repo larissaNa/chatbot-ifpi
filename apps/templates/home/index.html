@@ -13,25 +13,29 @@
 <div class="chat-page">
   <div id="chat-container" class="chat-container initial-state" role="application" aria-label="Chatbot IFPI">
 
-    <div id="welcome-message" class="welcome-message">
-      <h1>Olá, sou o Piazinho. Como posso lhe ajudar?</h1>
-    </div>
+    <div class="chat-main">
+      <div id="welcome-message" class="welcome-message">
+        <h1>Olá, sou o Piazinho. Como posso lhe ajudar?</h1>
+      </div>
 
-    <div id="chat-box" class="chat-body" aria-live="polite" aria-relevant="additions">
+      <div id="chat-box" class="chat-body" aria-live="polite" aria-relevant="additions">
+      </div>
     </div>
 
     <div class="chat-footer">
-      <form id="chat-form" class="chat-form" autocomplete="off">
-        <div class="chat-input-shell">
-          <input type="text" id="user-input" class="chat-input" placeholder="Digite sua pergunta..." autocomplete="off" aria-label="Mensagem">
-          <button id="send-btn" type="submit" class="chat-send" aria-label="Enviar mensagem">
-            <svg id="send-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-            </svg>
-          </button>
-        </div>
-        <div class="chat-hint">Enter para enviar • Shift+Enter não suportado</div>
-      </form>
+      <div class="chat-footer-inner">
+        <form id="chat-form" class="chat-form" autocomplete="off">
+          <div class="chat-input-shell">
+            <input type="text" id="user-input" class="chat-input" placeholder="Digite sua pergunta..." autocomplete="off" aria-label="Mensagem">
+            <button id="send-btn" type="submit" class="chat-send" aria-label="Enviar mensagem">
+              <svg id="send-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="chat-hint">Enter para enviar • Shift+Enter não suportado</div>
+        </form>
+      </div>
     </div>
   </div>
 </div>

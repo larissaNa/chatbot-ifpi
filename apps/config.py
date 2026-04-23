@@ -18,6 +18,7 @@ class Config(object):
         SECRET_KEY = ''.join(random.choice( string.ascii_lowercase  ) for i in range( 32 ))    
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    CHAT_HISTORY_LIMIT = int(os.getenv("CHAT_HISTORY_LIMIT", "12"))
 
     DB_ENGINE   = os.getenv('DB_ENGINE'   , None)
     DB_USERNAME = os.getenv('DB_USERNAME' , None)

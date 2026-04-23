@@ -5,7 +5,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from apps.core.agents.belief_revision_agent import revisar_crenca
+from apps.core.documents.agents.belief_revision_agent import revisar_crenca
 
 def generate_embedding(dim=384):
     """Gera um vetor normalizado aleatório"""
@@ -63,7 +63,7 @@ def test_belief_revision():
     res3 = revisar_crenca.invoke({"dados_revisao": input_obsoleta})
     print(json.dumps(res3, indent=2, ensure_ascii=False))
     assert res3["status_crenca"] == "OBSOLETA"
-    assert res3["acao_recomendada"] == "REMOVER"
+    assert res3["acao_recomendada"] == "SINALIZAR_OBSOLESCENCIA"
     
     print("\nTodos os testes passaram com sucesso!")
 

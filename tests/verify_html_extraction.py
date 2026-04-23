@@ -6,14 +6,14 @@ import os
 # Adiciona o diretório raiz ao path para importação
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from apps.core.agents.link_analysis_agent import analisar_link
-from apps.core.agents.extraction_agent import extrair_conteudo
+from apps.core.documents.agents.link_analysis_agent import analisar_link
+from apps.core.documents.agents.extraction_agent import extrair_conteudo
 
 class TestHtmlExtraction(unittest.TestCase):
     
-    @patch('apps.core.agents.link_analysis_agent.requests')
-    @patch('apps.core.agents.link_analysis_agent.DocumentoOficial')
-    @patch('apps.core.agents.link_analysis_agent.db')
+    @patch('apps.core.documents.agents.link_analysis_agent.requests')
+    @patch('apps.core.documents.agents.link_analysis_agent.DocumentoOficial')
+    @patch('apps.core.documents.agents.link_analysis_agent.db')
     def test_analise_html_puro(self, mock_db, mock_doc_model, mock_requests):
         # Mock HEAD response
         mock_head = MagicMock()
@@ -51,7 +51,7 @@ class TestHtmlExtraction(unittest.TestCase):
         print("\n--- Testando Extração de Conteúdo ---")
         
         # Mock requests inside extraction agent as well
-        with patch('apps.core.agents.extraction_agent.requests') as mock_req_extract:
+        with patch('apps.core.documents.agents.extraction_agent.requests') as mock_req_extract:
             mock_req_extract.get.return_value = mock_get
             resultado_extracao = extrair_conteudo.invoke({"analise": resultado_analise})
             
@@ -61,9 +61,9 @@ class TestHtmlExtraction(unittest.TestCase):
         self.assertTrue(len(resultado_extracao['documentos']) > 0)
         self.assertIn("Conteúdo Importante", resultado_extracao['documentos'][0]['texto'])
 
-    @patch('apps.core.agents.link_analysis_agent.requests')
-    @patch('apps.core.agents.link_analysis_agent.DocumentoOficial')
-    @patch('apps.core.agents.link_analysis_agent.db')
+    @patch('apps.core.documents.agents.link_analysis_agent.requests')
+    @patch('apps.core.documents.agents.link_analysis_agent.DocumentoOficial')
+    @patch('apps.core.documents.agents.link_analysis_agent.db')
     def test_analise_html_limite(self, mock_db, mock_doc_model, mock_requests):
         # Mock HEAD response
         mock_head = MagicMock()

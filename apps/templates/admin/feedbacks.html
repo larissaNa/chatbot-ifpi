@@ -1,0 +1,132 @@
+{% extends "layouts/base.html" %}
+{% block title %} Feedbacks Negativos {% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Feedbacks Negativos do Chatbot</h3>
+    <a href="{{ url_for('authentication_blueprint.admin_docs') }}" class="btn btn-sm btn-link">Voltar</a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small mb-1">Total de respostas com 👎</div>
+          <div class="display-6 fw-bold">{{ stats.total_down }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small mb-1">Revisadas automaticamente</div>
+          <div class="display-6 fw-bold">{{ stats.revised_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small mb-1">Falha mais recorrente</div>
+          <div class="fw-semibold mt-2">{{ stats.top_failure }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Falhas Mais Recorrentes</h5>
+          <ul class="list-group list-group-flush">
+            {% for item in recurrent_failures %}
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+              <span>{{ item.label }}</span>
+              <span class="badge bg-danger rounded-pill">{{ item.count }}</span>
+            </li>
+            {% else %}
+            <li class="list-group-item px-0 text-muted">Sem feedbacks negativos registrados.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Perguntas Repetidamente Problemáticas</h5>
+          <ul class="list-group list-group-flush">
+            {% for item in recurring_questions %}
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+              <span class="me-3 text-truncate">{{ item.question }}</span>
+              <span class="badge bg-secondary rounded-pill">{{ item.count }}</span>
+            </li>
+            {% else %}
+            <li class="list-group-item px-0 text-muted">Sem repetições relevantes até o momento.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="card-title mb-0">Listagem de Respostas com 👎</h5>
+        <span class="text-muted small">Mais recentes primeiro</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Pergunta</th>
+              <th>Resposta anterior</th>
+              <th>Falha provável</th>
+              <th>Resposta revisada</th>
+              <th>Quando</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for feedback in feedbacks %}
+            <tr>
+              <td>{{ loop.index + ((pagination.page - 1) * pagination.per_page) }}</td>
+              <td style="max-width: 260px; white-space: normal;">{{ feedback.question or '-' }}</td>
+              <td style="max-width: 320px; white-space: normal;">{{ feedback.answer or '-' }}</td>
+              <td>
+                <span class="badge bg-warning text-dark">{{ classify_feedback_failure(feedback) }}</span>
+              </td>
+              <td style="max-width: 320px; white-space: normal;">{{ feedback.comment or '-' }}</td>
+              <td>{{ feedback.updated_at.strftime('%d/%m/%Y %H:%M') if feedback.updated_at else '-' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6" class="text-center">Sem respostas avaliadas como não úteis.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if pagination %}
+  <nav aria-label="paginação" class="mt-3">
+    <ul class="pagination">
+      {% if pagination.has_prev %}
+      <li class="page-item"><a class="page-link" href="{{ url_for('authentication_blueprint.admin_feedbacks', page=pagination.prev_num) }}">Anterior</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Página {{ pagination.page }} / {{ pagination.pages }}</span></li>
+      {% if pagination.has_next %}
+      <li class="page-item"><a class="page-link" href="{{ url_for('authentication_blueprint.admin_feedbacks', page=pagination.next_num) }}">Próxima</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

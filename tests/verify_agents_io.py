@@ -58,10 +58,10 @@ sys.modules["langchain_text_splitters"].RecursiveCharacterTextSplitter.return_va
 
 
 try:
-    from apps.core.agents.link_analysis_agent import _analise_basica_url
-    from apps.core.agents.extraction_agent import extrair_conteudo
-    from apps.core.agents.processing_agent import processar_conteudo
-    from apps.core.agents.belief_revision_agent import revisar_crenca
+    from apps.core.documents.agents.link_analysis_agent import _analise_basica_url
+    from apps.core.documents.agents.extraction_agent import extrair_conteudo
+    from apps.core.documents.agents.processing_agent import processar_conteudo
+    from apps.core.documents.agents.belief_revision_agent import revisar_crenca
 except ImportError as e:
     print(f"CRITICAL ERROR importing agents: {e}")
     sys.exit(1)
@@ -99,12 +99,12 @@ class TestAgentPipelineIO(unittest.TestCase):
         # extrair_conteudo espera um dict com chaves: 'url'/'fonte', 'tipo_conteudo', 'pdfs_encontrados', 'titulo'
         
         # Mockar requests para internos do agente de extração
-        with patch("apps.core.agents.extraction_agent.requests.get") as mock_get:
+        with patch("apps.core.documents.agents.extraction_agent.requests.get") as mock_get:
             mock_get.return_value.status_code = 200
             mock_get.return_value.content = b"%PDF-1.4..."
             
             # Mock fitz (PyMuPDF)
-            with patch("apps.core.agents.extraction_agent.fitz.open") as mock_open:
+            with patch("apps.core.documents.agents.extraction_agent.fitz.open") as mock_open:
                 mock_page = MagicMock()
                 mock_page.get_text.return_value = "Conteúdo de teste do documento oficial."
                 mock_pdf = MagicMock()

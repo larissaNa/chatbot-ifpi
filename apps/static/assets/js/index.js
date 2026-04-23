@@ -87918,6 +87918,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "d
 
 document.addEventListener('DOMContentLoaded', function () {
   var calendarEl = document.getElementById('calendar');
+  if (!calendarEl) {
+    return;
+  }
   var calendar = new _core.Calendar(calendarEl, {
     plugins: [_interaction["default"], _daygrid["default"], _timegrid["default"], _list["default"]],
     headerToolbar: {

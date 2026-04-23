@@ -31,7 +31,7 @@ def tool_decorator(func):
 sys.modules["langchain_core.tools"] = MagicMock()
 sys.modules["langchain_core.tools"].tool = tool_decorator
 
-from apps.core.agents.processing_agent import processar_conteudo
+from apps.core.documents.agents.processing_agent import processar_conteudo
 
 class TestProcessingAgent(unittest.TestCase):
     
@@ -52,8 +52,8 @@ class TestProcessingAgent(unittest.TestCase):
         }
         
         print(f"   -> Input simulado: {len(mock_input['documentos'])} documento(s)")
-        with patch("apps.core.agents.processing_agent._split_semantic_chunks", return_value=["Chunk 1", "Chunk 2"]), patch(
-            "apps.core.agents.processing_agent._generate_embedding", return_value=[0.1, 0.2, 0.3]
+        with patch("apps.core.documents.agents.processing_agent._split_semantic_chunks", return_value=["Chunk 1", "Chunk 2"]), patch(
+            "apps.core.documents.agents.processing_agent._generate_embedding", return_value=[0.1, 0.2, 0.3]
         ):
             if hasattr(processar_conteudo, "invoke"):
                 resultado = processar_conteudo.invoke({"extracao": mock_input})

@@ -22,8 +22,8 @@ def register_extensions(app):
 
 
 def register_blueprints(app):
-    for module_name in ('authentication', 'home', 'core'):
-        module = import_module('apps.{}.routes'.format(module_name))
+    for module_name in ("authentication", "home.routes", "core"):
+        module = import_module("apps.{}".format(module_name))
         app.register_blueprint(module.blueprint)
 
 

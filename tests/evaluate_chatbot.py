@@ -11,7 +11,7 @@ current_dir = os.getcwd()
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-from apps.core.main import run_chatbot
+from apps.core import run_chatbot
 
 
 @dataclass(frozen=True)

@@ -10,7 +10,7 @@ if current_dir not in sys.path:
 sys.modules["chromadb"] = MagicMock()
 sys.modules["chromadb.config"] = MagicMock()
 
-from apps.core.agents.chromadb_agent import executar_persistencia
+from apps.core.documents.agents.chromadb_agent import executar_persistencia
 
 
 class TestChromaDBAgent(unittest.TestCase):

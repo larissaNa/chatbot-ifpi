@@ -4,3 +4,5 @@ credenciais.json
 __pycache__
 chroma_db/
 hf_cache_v2/
+chroma.sqlite3
+

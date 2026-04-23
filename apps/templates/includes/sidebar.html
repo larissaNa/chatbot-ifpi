@@ -1,59 +1,105 @@
-<div class="sidebar">
+{% set current_endpoint = request.endpoint or '' %}
+{% set docs_endpoints = [
+  'authentication_blueprint.admin_docs',
+  'authentication_blueprint.admin_doc_detail',
+  'authentication_blueprint.admin_versions',
+  'authentication_blueprint.admin_toggle_doc',
+  'authentication_blueprint.admin_confirm_obsolete',
+  'authentication_blueprint.admin_mark_obsolete',
+  'authentication_blueprint.admin_revisar_doc',
+  'authentication_blueprint.admin_trigger_agent'
+] %}
+
+<div class="sidebar app-sidebar">
   <div class="sidebar-inner">
-    <!-- ### $Sidebar Header ### -->
     <div class="sidebar-logo">
-      <div class="peers ai-c fxw-nw">
-        <div class="peer peer-greed">
-          <a class="sidebar-link td-n" href="/index">
-            <div class="peers ai-c fxw-nw">
-              <div class="peer">
-                <div class="logo">
-                  <img src="{{ config.ASSETS_ROOT }}/images/logo.png" style="width: 45px;" alt="">
-                </div>
-              </div>
-              <div class="peer peer-greed">
-                <h5 class="lh-1 mB-0 logo-text">IFPIA - ChatBot</h5>
-              </div>
-            </div>
+      <div class="sidebar-brand-shell">
+        <a class="sidebar-link td-n sidebar-brand" href="{{ url_for('home_blueprint.index') }}">
+          <span class="sidebar-brand-mark">
+            <img src="{{ config.ASSETS_ROOT }}/images/logo.png" alt="Logo IFPIA">
+          </span>
+          <span class="sidebar-brand-copy">
+            <span class="sidebar-brand-kicker">Painel Administrativo</span>
+            <h5 class="lh-1 mB-0 logo-text">IFPIA - ChatBot</h5>
+          </span>
+        </a>
+        <div class="mobile-toggle sidebar-toggle">
+          <a href="#" class="td-n" aria-label="Alternar sidebar">
+            <i class="ti-layout-grid2-alt"></i>
           </a>
-        </div>
-        <div class="peer">
-          <div class="mobile-toggle sidebar-toggle">
-            <a href="#" class="td-n">
-              <i class="ti-arrow-circle-left"></i>
-            </a>
-          </div>
         </div>
       </div>
     </div>
 
-    <!-- ### Sidebar Menu ### -->
     <ul class="sidebar-menu scrollable pos-r">
-      <li class="nav-item mT-10">
-        <a class="sidebar-link" href="{{ url_for('home_blueprint.index') }}">
-          <span class="icon-holder"><i class="ti-comments"></i></span>
-          <span class="title">Chatbot</span>
-        </a>
+      <li class="sidebar-section-label">
+        <span>Principal</span>
       </li>
 
-      
+      <li class="nav-item sidebar-chat-item">
+        <a
+          id="sidebar-chat-toggle"
+          class="sidebar-link sidebar-chat-toggle {{ 'actived' if current_endpoint == 'home_blueprint.index' else '' }}"
+          href="{{ url_for('home_blueprint.index') }}"
+          title="Chatbot"
+          aria-expanded="false"
+        >
+          <span class="icon-holder"><i class="ti-comments"></i></span>
+          <span class="title">Chatbot</span>
+          <span class="sidebar-chat-caret"><i class="ti-angle-down"></i></span>
+        </a>
+
+        <div id="sidebar-chat-dropdown" class="sidebar-chat-dropdown">
+          <div class="sidebar-chat-panel">
+            <div class="sidebar-chat-actions">
+              <button id="new-chat-btn" type="button" class="sidebar-new-chat-btn">
+                <span class="icon-holder"><i class="ti-plus"></i></span>
+                <span class="title">Nova conversa</span>
+              </button>
+            </div>
+            <div id="conversation-list" class="sidebar-conversation-list"></div>
+          </div>
+        </div>
+      </li>
+
       {% if current_user.is_admin %}
-     
+      <li class="sidebar-section-label sidebar-section-label-admin">
+        <span>Administrativo</span>
+      </li>
+
       <li class="nav-item">
-        <a class="sidebar-link" href="{{ url_for('authentication_blueprint.admin_docs') }}">
+        <a
+          class="sidebar-link {{ 'actived' if current_endpoint in docs_endpoints else '' }}"
+          href="{{ url_for('authentication_blueprint.admin_docs') }}"
+          title="Gerenciar Documentos"
+        >
           <span class="icon-holder"><i class="ti-folder"></i></span>
           <span class="title">Gerenciar Documentos</span>
         </a>
       </li>
+
       <li class="nav-item">
-        <a class="sidebar-link" href="{{ url_for('authentication_blueprint.admin_logs') }}">
-          <span class="icon-holder"><i class="ti-folder"></i></span>
-          <span class="title">Vizualisar Logs</span>
+        <a
+          class="sidebar-link {{ 'actived' if current_endpoint == 'authentication_blueprint.admin_logs' else '' }}"
+          href="{{ url_for('authentication_blueprint.admin_logs') }}"
+          title="Visualizar Logs"
+        >
+          <span class="icon-holder"><i class="ti-receipt"></i></span>
+          <span class="title">Visualizar Logs</span>
         </a>
       </li>
-      
+
+      <li class="nav-item">
+        <a
+          class="sidebar-link {{ 'actived' if current_endpoint == 'authentication_blueprint.admin_feedbacks' else '' }}"
+          href="{{ url_for('authentication_blueprint.admin_feedbacks') }}"
+          title="Feedbacks Negativos"
+        >
+          <span class="icon-holder"><i class="ti-thumb-down"></i></span>
+          <span class="title">Feedbacks Negativos</span>
+        </a>
+      </li>
       {% endif %}
-     
     </ul>
   </div>
 </div>
