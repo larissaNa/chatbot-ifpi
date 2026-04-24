@@ -3,10 +3,12 @@
 Copyright (c) 2019 - present AppSeed.us
 """
 
-bind = '0.0.0.0:5005'
-workers = 1
+import os
+
+bind = f"0.0.0.0:{os.getenv('PORT', '5005')}"
+workers = int(os.getenv("WEB_CONCURRENCY", "1"))
 accesslog = '-'
-loglevel = 'debug'
+loglevel = os.getenv("GUNICORN_LOG_LEVEL", "info")
 capture_output = True
 enable_stdio_inheritance = True
-timeout = 300
+timeout = int(os.getenv("GUNICORN_TIMEOUT", "300"))

@@ -7,7 +7,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import Tool
 
 from apps.core.chat.prompts import get_feedback_rewrite_prompt, get_rag_answer_prompt
-from apps.core.documents.services.vectorstore_service import setup_vectorstore
 
 NOT_FOUND_ANSWER = "Não encontrei essa informação nos documentos oficiais do IFPI."
 
@@ -28,6 +27,8 @@ def _get_vectorstore():
     global _vectorstore
     if _vectorstore is None:
         try:
+            from apps.core.documents.services.vectorstore_service import setup_vectorstore
+
             _vectorstore = setup_vectorstore()
         except Exception:
             _vectorstore = None

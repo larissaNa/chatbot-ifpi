@@ -5,7 +5,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
-from .builder import graph
+from .builder import get_graph
 
 
 def sanitize_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
@@ -74,7 +74,7 @@ def run_chatbot(
     structured = None
 
     print(f"--- Iniciando execução do grafo para: {user_input[:50]}... ---")
-    final_state = graph.invoke(state)
+    final_state = get_graph().invoke(state)
     execution_time = time.time() - start_time
     print(f"--- Execução concluída em {execution_time:.2f} segundos ---")
 

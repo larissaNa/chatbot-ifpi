@@ -28,21 +28,28 @@ def register_blueprints(app):
 
 
 def configure_database(app):
+    with app.app_context():
+        engine_options = app.config.get("SQLALCHEMY_ENGINE_OPTIONS") or {}
+        connect_args = dict(engine_options.get("connect_args") or {})
+        connect_args.setdefault("connect_timeout", int(os.getenv("DB_CONNECT_TIMEOUT", "5")))
+        engine_options["connect_args"] = connect_args
+        engine_options.setdefault("pool_pre_ping", True)
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
 
-    @app.before_first_request
-    def initialize_database():
         try:
             db.create_all()
         except Exception as e:
-
-            print('> Error: DBMS Exception: ' + str(e) )
-
-            # fallback to SQLite
+            print("DB Error:", e)
             basedir = os.path.abspath(os.path.dirname(__file__))
-            app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'db.sqlite3')
-
-            print('> Fallback to SQLite ')
-            db.create_all()
+            app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "db.sqlite3")
+            try:
+                try:
+                    db.engine.dispose()
+                except Exception:
+                    pass
+                db.create_all()
+            except Exception as e2:
+                print("DB Error:", e2)
 
     @app.teardown_request
     def shutdown_session(exception=None):
