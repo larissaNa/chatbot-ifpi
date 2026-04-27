@@ -1,12 +1,52 @@
 [
   {
-    "pergunta": "Qual é o procedimento para solicitar férias?",
-    "resposta_esperada": "Descreva o procedimento conforme as normas do IFPI presentes nos documentos oficiais.",
-    "fontes": []
+    "pergunta": "Qual é o procedimento para solicitar férias no IFPI?",
+    "resposta_esperada": "A solicitação de férias deve seguir o planejamento institucional, sendo organizada e controlada pelo setor responsável pela gestão de pessoas, que acompanha a programação e execução das férias dos servidores.",
+    "fontes": ["Regimento Interno Geral IFPI"]
   },
   {
-    "pergunta": "Qual é o prazo para trancamento de disciplina?",
-    "resposta_esperada": "Informe o prazo conforme as normas acadêmicas do IFPI presentes nos documentos oficiais.",
-    "fontes": []
+    "pergunta": "Quem é responsável por controlar a programação de férias dos servidores?",
+    "resposta_esperada": "A gestão e o controle da programação de férias dos servidores são realizados pelos setores responsáveis pela área de pessoal, que planejam, acompanham e verificam a execução das férias.",
+    "fontes": ["Regimento Interno Geral IFPI"]
+  },
+  {
+    "pergunta": "Qual o prazo para trancamento de disciplina?",
+    "resposta_esperada": "O trancamento de disciplina deve seguir os prazos estabelecidos no calendário acadêmico da instituição, sendo necessário que o estudante solicite dentro do período definido.",
+    "fontes": ["Regimento Interno Geral IFPI"]
+  },
+  {
+    "pergunta": "Quem acompanha o estágio probatório dos servidores no IFPI?",
+    "resposta_esperada": "A Comissão de Avaliação do Estágio Probatório é responsável por acompanhar, fiscalizar e avaliar o desempenho dos servidores durante o período probatório.",
+    "fontes": ["Regimento Interno Geral IFPI"]
+  },
+  {
+    "pergunta": "Quais critérios são avaliados no estágio probatório?",
+    "resposta_esperada": "Os critérios incluem assiduidade, disciplina, responsabilidade, capacidade de iniciativa e produtividade do servidor durante o período de avaliação.",
+    "fontes": ["Regimento Interno Geral IFPI"]
+  },
+  {
+    "pergunta": "Qual é a função da Corregedoria-Geral no IFPI?",
+    "resposta_esperada": "A Corregedoria-Geral é responsável por apurar irregularidades, conduzir ações disciplinares e investigar possíveis desvios de conduta de servidores.",
+    "fontes": ["Regimento Interno Geral IFPI"]
+  },
+  {
+    "pergunta": "Quem publica resoluções e atos institucionais no IFPI?",
+    "resposta_esperada": "A Secretaria de Órgãos Superiores e Colegiados é responsável por editar e publicar resoluções e atos institucionais nos canais oficiais.",
+    "fontes": ["Regimento Interno Geral IFPI"]
+  },
+  {
+    "pergunta": "Qual é o papel da Procuradoria Federal no IFPI?",
+    "resposta_esperada": "A Procuradoria Federal atua na representação judicial e extrajudicial do IFPI, além de prestar consultoria e assessoramento jurídico à instituição.",
+    "fontes": ["Regimento Interno Geral IFPI"]
+  },
+  {
+    "pergunta": "O que faz a Comissão de Ética Institucional?",
+    "resposta_esperada": "A Comissão de Ética atua de forma consultiva e educativa, garantindo o cumprimento das normas éticas e apurando condutas incompatíveis com o serviço público.",
+    "fontes": ["Regimento Interno Geral IFPI"]
+  },
+  {
+    "pergunta": "Quem organiza o calendário de reuniões institucionais?",
+    "resposta_esperada": "A Secretaria de Órgãos Superiores e Colegiados é responsável por organizar e divulgar o calendário de reuniões dos órgãos institucionais.",
+    "fontes": ["Regimento Interno Geral IFPI"]
   }
 ]

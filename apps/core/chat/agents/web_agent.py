@@ -5,24 +5,21 @@ from typing import Any
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
-from langchain_tavily import TavilySearch
-
 from apps.core.chat.prompts import get_web_answer_prompt
 
-tavily_api_key = os.getenv("TAVILY_API_KEY")
+def _get_tavily_tool():
+    from langchain_tavily import TavilySearch
+    tavily_api_key = os.getenv("TAVILY_API_KEY")
 
-if tavily_api_key:
-    tavily_tool = TavilySearch(max_results=2, tavily_api_key=tavily_api_key)
-    tools = [tavily_tool]
-else:
+    if tavily_api_key:
+        return TavilySearch(max_results=2, tavily_api_key=tavily_api_key)
 
     @tool
     def disabled_search(query: str) -> str:
         """Search tool disabled because API key is missing."""
         return "Web search disabled: missing TAVILY_API_KEY."
 
-    tavily_tool = disabled_search
-    tools = [tavily_tool]
+    return disabled_search
 
 
 NOT_FOUND_WEB = "Não foi possível obter fontes confiáveis na web."
@@ -86,6 +83,8 @@ def web_search(question: str, *, max_results: int = 4) -> dict[str, Any]:
     if not q:
         return {"status": "error", "message": "Pergunta vazia.", "results": []}
 
+    tavily_tool = _get_tavily_tool()
+    tavily_api_key = os.getenv("TAVILY_API_KEY")
     if not tavily_api_key:
         return {"status": "error", "message": "TAVILY_API_KEY ausente.", "results": []}
 
@@ -114,6 +113,7 @@ def responder_web(
     conversation_context: str = "",
     user_profile: str = "",
 ) -> dict[str, Any]:
+    tavily_tool = _get_tavily_tool()
     search = web_search(question, max_results=max_results)
     results = search.get("results") or []
 

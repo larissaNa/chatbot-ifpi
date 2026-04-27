@@ -11,28 +11,17 @@ from apps.core.chat.prompts import get_feedback_rewrite_prompt, get_rag_answer_p
 NOT_FOUND_ANSWER = "Não encontrei essa informação nos documentos oficiais do IFPI."
 
 _llm = None
-_vectorstore = None
-
 
 def _get_llm():
     global _llm
     if _llm is None:
         from apps.core.llm_config import get_llm
-
         _llm = get_llm()
     return _llm
 
-
 def _get_vectorstore():
-    global _vectorstore
-    if _vectorstore is None:
-        try:
-            from apps.core.documents.services.vectorstore_service import setup_vectorstore
-
-            _vectorstore = setup_vectorstore()
-        except Exception:
-            _vectorstore = None
-    return _vectorstore
+    from apps.core.documents.services.vectorstore_service import get_vectorstore
+    return get_vectorstore()
 
 
 def _score_to_relevance(score: float) -> float:

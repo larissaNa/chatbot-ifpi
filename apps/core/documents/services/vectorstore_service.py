@@ -1,30 +1,53 @@
 import os
 
+_vectorstore = None
 
-def setup_vectorstore(persist_directory: str = "chroma_db"):
+def setup_vectorstore():
     from langchain_chroma import Chroma
-    from langchain_huggingface import HuggingFaceEmbeddings
 
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(base_dir, "..", "..", "..", ".."))
-    persist_path = os.path.join(project_root, persist_directory)
+    ENV = os.getenv("ENV", "dev")
 
-    model_name = os.getenv(
-        "EMBEDDINGS_MODEL_NAME",
-        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-    )
-    embeddings = HuggingFaceEmbeddings(model_name=model_name)
+    if ENV == "prod":
+        # 🔵 PRODUÇÃO - leve (Render)
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-    vectorstore = Chroma(
-        collection_name="crencas_institucionais",
-        embedding_function=embeddings,
-        persist_directory=persist_path,
-    )
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/embedding-001"
+        )
+
+        vectorstore = Chroma(
+            collection_name="crencas_institucionais",
+            embedding_function=embeddings
+        )
+
+    else:
+        # 🟢 DESENVOLVIMENTO - local
+        from langchain_huggingface import HuggingFaceEmbeddings
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.abspath(os.path.join(base_dir, "..", "..", "..", ".."))
+        persist_path = os.path.join(project_root, "chroma_db")
+
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        )
+
+        vectorstore = Chroma(
+            collection_name="crencas_institucionais",
+            embedding_function=embeddings,
+            persist_directory=persist_path
+        )
 
     try:
         count = vectorstore._collection.count()
-        print(f"[INFO] Conectado à base vetorial em '{persist_path}'. Documentos indexados: {count}")
+        print(f"[INFO] Ambiente: {ENV}. Documentos indexados: {count}")
     except Exception as e:
-        print(f"[INFO] Conectado à base vetorial em '{persist_path}'. (Não foi possível contar documentos: {e})")
+        print(f"[INFO] Ambiente: {ENV}. (Não foi possível contar documentos: {e})")
 
     return vectorstore
+
+def get_vectorstore():
+    global _vectorstore
+    if _vectorstore is None:
+        _vectorstore = setup_vectorstore()
+    return _vectorstore

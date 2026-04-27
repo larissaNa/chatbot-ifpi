@@ -5,33 +5,47 @@ from datetime import datetime
 
 from langchain_core.tools import tool
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from sentence_transformers import SentenceTransformer
 
 _embedding_model = None
-
 
 def _get_embedding_model():
     global _embedding_model
     if _embedding_model is not None:
         return _embedding_model
 
-    model_name = os.getenv(
-        "EMBEDDING_MODEL_NAME",
-        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-    )
-    try:
-        _embedding_model = SentenceTransformer(model_name)
-    except Exception:
-        _embedding_model = None
+    ENV = os.getenv("ENV", "dev")
+
+    if ENV == "prod":
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
+        _embedding_model = GoogleGenerativeAIEmbeddings(
+            model="models/embedding-001"
+        )
+    else:
+        from sentence_transformers import SentenceTransformer
+        model_name = os.getenv(
+            "EMBEDDING_MODEL_NAME",
+            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        )
+        try:
+            _embedding_model = SentenceTransformer(model_name)
+        except Exception:
+            _embedding_model = None
     return _embedding_model
 
 
 def _generate_embedding(text: str) -> list:
-    """Gera embedding para o texto usando sentence-transformers."""
+    """Gera embedding para o texto."""
     embedding_model = _get_embedding_model()
     if not embedding_model:
         return []
-    return embedding_model.encode(text).tolist()
+    
+    ENV = os.getenv("ENV", "dev")
+    if ENV == "prod":
+        # LangChain embeddings
+        return embedding_model.embed_query(text)
+    else:
+        # SentenceTransformer
+        return embedding_model.encode(text).tolist()
 
 
 def _calculate_hash(text: str) -> str:

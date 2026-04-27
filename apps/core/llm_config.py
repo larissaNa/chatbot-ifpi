@@ -1,10 +1,6 @@
 import os
 from pathlib import Path
 
-from vertexai import init as vertex_init
-from langchain_google_vertexai import ChatVertexAI
-
-
 def _ensure_google_application_credentials():
     if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
         return
@@ -13,8 +9,10 @@ def _ensure_google_application_credentials():
     if local_credentials_path.exists():
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(local_credentials_path)
 
-
 def get_llm():
+    from vertexai import init as vertex_init
+    from langchain_google_vertexai import ChatVertexAI
+
     _ensure_google_application_credentials()
 
     project = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("VERTEXAI_PROJECT") or "gen-lang-client-0261212364"

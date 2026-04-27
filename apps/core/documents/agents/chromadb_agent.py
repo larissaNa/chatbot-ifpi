@@ -34,9 +34,16 @@ def executar_persistencia(dados_persistencia: dict) -> dict:
 
     try:
         import chromadb
+        ENV = os.getenv("ENV", "dev")
 
-        persist_dir = os.path.join(_project_root(), "chroma_db")
-        client = chromadb.PersistentClient(path=persist_dir)
+        if ENV == "prod":
+            client = chromadb.HttpClient() # Ou EphemeralClient se for local memory
+            # No Render, geralmente não temos um server Chroma separado, então EphemeralClient é mais seguro para "no persistence"
+            client = chromadb.EphemeralClient()
+        else:
+            persist_dir = os.path.join(_project_root(), "chroma_db")
+            client = chromadb.PersistentClient(path=persist_dir)
+
         collection = client.get_or_create_collection(name="crencas_institucionais")
     except Exception as e:
         return _erro_resposta(id_crenca, f"Falha ao conectar ChromaDB: {str(e)}")

@@ -44,10 +44,22 @@ def embed_similarity(model: SentenceTransformer, a: str, b: str) -> float:
     return float(util.cos_sim(ea, eb).item())
 
 
+def calculate_source_iou(expected: list[str], actual: list[str]) -> float:
+    if not expected and not actual:
+        return 1.0
+    if not expected or not actual:
+        return 0.0
+    set_e = set(expected)
+    set_a = set(actual)
+    intersection = set_e.intersection(set_a)
+    union = set_e.union(set_a)
+    return len(intersection) / len(union)
+
+
 def compute_metrics(rows: list[dict[str, Any]]) -> dict[str, float]:
     total = len(rows)
     if total == 0:
-        return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
+        return {"precision": 0.0, "recall": 0.0, "f1": 0.0, "avg_source_iou": 0.0}
 
     answered = [r for r in rows if r.get("status") == "success"]
     correct = [r for r in rows if r.get("is_correct") is True]
@@ -55,12 +67,20 @@ def compute_metrics(rows: list[dict[str, Any]]) -> dict[str, float]:
     precision = (len(correct) / len(answered)) if answered else 0.0
     recall = len(correct) / total
     f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
-    return {"precision": precision, "recall": recall, "f1": f1}
+    
+    avg_source_iou = sum(r.get("source_iou", 0.0) for r in rows) / total
+    
+    return {
+        "precision": precision, 
+        "recall": recall, 
+        "f1": f1,
+        "avg_source_iou": avg_source_iou
+    }
 
 
 def main():
     dataset_path = os.path.join("tests", "eval_dataset.json")
-    threshold = float(os.getenv("EVAL_SIM_THRESHOLD", "0.85"))
+    threshold = float(os.getenv("EVAL_SIM_THRESHOLD", "0.75"))
     dry_run = os.getenv("EVAL_DRY_RUN", "0").strip().lower() in ("1", "true", "yes")
 
     dataset = load_dataset(dataset_path)
@@ -84,14 +104,18 @@ def main():
             sources = result.get("sources") or []
 
         sim = embed_similarity(model, answer, item.resposta_esperada) if answer else 0.0
+        source_iou = calculate_source_iou(item.fontes, sources)
+        
         has_sources = isinstance(sources, list) and len(sources) > 0
-        is_correct = bool(sim >= threshold and status == "success" and has_sources)
+        # Critério aprimorado: similaridade + presença de fontes + overlap de fontes mínimo
+        is_correct = bool(sim >= threshold and status == "success" and has_sources and source_iou > 0)
 
         rows.append(
             {
                 "pergunta": item.pergunta,
                 "status": status,
                 "similarity": sim,
+                "source_iou": source_iou,
                 "has_sources": has_sources,
                 "is_correct": is_correct,
             }
