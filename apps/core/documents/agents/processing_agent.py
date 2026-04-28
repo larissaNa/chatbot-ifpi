@@ -17,11 +17,17 @@ def _get_embedding_model():
 
     if ENV == "prod":
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
+        # O modelo 'embedding-001' as vezes exige o prefixo 'models/' mas o nome atualizado e 'text-embedding-004'
         _embedding_model = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001"
+            model="models/text-embedding-004"
         )
     else:
-        from sentence_transformers import SentenceTransformer
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            print("[ERRO] sentence_transformers não encontrada. Use 'pip install sentence-transformers' para dev.")
+            return None
+
         model_name = os.getenv(
             "EMBEDDING_MODEL_NAME",
             "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
