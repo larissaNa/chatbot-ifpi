@@ -22,7 +22,12 @@ def setup_vectorstore():
 
     else:
         # 🟢 DESENVOLVIMENTO - local
-        from langchain_huggingface import HuggingFaceEmbeddings
+        try:
+            from langchain_huggingface import HuggingFaceEmbeddings
+        except ImportError:
+            # Fallback caso a lib não esteja instalada mesmo em dev
+            print("[ERRO] langchain_huggingface não encontrada. Use 'pip install langchain-huggingface' para dev.")
+            raise
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.abspath(os.path.join(base_dir, "..", "..", "..", ".."))

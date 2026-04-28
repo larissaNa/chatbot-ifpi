@@ -21,7 +21,12 @@ def _get_embedding_model():
             model="models/embedding-001"
         )
     else:
-        from sentence_transformers import SentenceTransformer
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            print("[ERRO] sentence_transformers não encontrada. Use 'pip install sentence-transformers' para dev.")
+            return None
+
         model_name = os.getenv(
             "EMBEDDING_MODEL_NAME",
             "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",

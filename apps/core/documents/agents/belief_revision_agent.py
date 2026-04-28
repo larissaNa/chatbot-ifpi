@@ -1,9 +1,30 @@
+import os
 from datetime import datetime
 
 import numpy as np
 from langchain_core.tools import tool
-from sentence_transformers import util
 
+ENV = os.getenv("ENV", "dev")
+
+def _calculate_cosine_similarity(vec_a, vec_b):
+    """
+    Calcula a similaridade de cosseno entre dois conjuntos de vetores sem depender de sentence_transformers.
+    vec_a, vec_b: numpy arrays (n_samples, n_features)
+    Retorna uma matriz de similaridade.
+    """
+    # Normalização dos vetores (L2 norm)
+    norm_a = np.linalg.norm(vec_a, axis=1, keepdims=True)
+    norm_b = np.linalg.norm(vec_b, axis=1, keepdims=True)
+    
+    # Evitar divisão por zero
+    norm_a[norm_a == 0] = 1.0
+    norm_b[norm_b == 0] = 1.0
+    
+    vec_a_norm = vec_a / norm_a
+    vec_b_norm = vec_b / norm_b
+    
+    # Produto escalar dos vetores normalizados
+    return np.dot(vec_a_norm, vec_b_norm.T)
 
 @tool
 def revisar_crenca(dados_revisao: dict) -> dict:
@@ -64,7 +85,7 @@ def revisar_crenca(dados_revisao: dict) -> dict:
             "metadados_associados": metadados_globais,
             "justificativa_tecnica": (
                 "Nao foram gerados novos embeddings para comparacao "
-                "(possivel falha de processamento ou documento vazio). "
+                "(possivel falha de processamento or documento vazio). "
                 "Mantendo estado atual por cautela."
             ),
             "timestamp_revisao": datetime.now().isoformat(),
@@ -89,8 +110,18 @@ def revisar_crenca(dados_revisao: dict) -> dict:
         emb_old_np = np.array(emb_old, dtype=np.float32)
         emb_new_np = np.array(emb_new, dtype=np.float32)
 
-        sim_matrix = util.cos_sim(emb_old_np, emb_new_np)
-        max_similarities = sim_matrix.max(axis=1).values
+        if ENV == "prod":
+            # Fallback manual em produção para evitar dependência de sentence_transformers
+            sim_matrix = _calculate_cosine_similarity(emb_old_np, emb_new_np)
+            max_similarities = sim_matrix.max(axis=1)
+        else:
+            from sentence_transformers import util
+            sim_matrix = util.cos_sim(emb_old_np, emb_new_np)
+            # SentenceTransformers util.cos_sim returns a tensor, we need values
+            if hasattr(sim_matrix, 'numpy'):
+                sim_matrix = sim_matrix.numpy()
+            max_similarities = sim_matrix.max(axis=1)
+
         avg_similarity = float(max_similarities.mean())
         min_similarity = float(max_similarities.min())
     except Exception as e:
