@@ -13,14 +13,18 @@ from apps.authentication import Users
 from apps.authentication.util import verify_pass
 
 
+# Em apps/authentication/routes/auth_routes.py
+
+@blueprint.route("/health")
+def health():
+    return {"status": "ok"}
+
 @blueprint.route("/")
 def route_default():
     if current_user.is_authenticated:
         return redirect(url_for("home_blueprint.index"))
-    if str(request.args.get("ui") or "").strip() == "1":
-        return redirect(url_for("authentication_blueprint.login"))
-    return {"status": "ok"}
-
+    # Redireciona para login por padrão, sem precisar de ?ui=1
+    return redirect(url_for("authentication_blueprint.login"))
 
 @blueprint.route("/login", methods=["GET", "POST"])
 def login():
