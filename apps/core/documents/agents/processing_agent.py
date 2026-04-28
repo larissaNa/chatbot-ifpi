@@ -17,8 +17,9 @@ def _get_embedding_model():
 
     if ENV == "prod":
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
+        # O modelo 'embedding-001' as vezes exige o prefixo 'models/' mas o nome atualizado e 'text-embedding-004'
         _embedding_model = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001"
+            model="models/text-embedding-004"
         )
     else:
         try:
@@ -128,7 +129,11 @@ def processar_conteudo(extracao: dict) -> dict:
         chunks_texto = _split_semantic_chunks(texto)
 
         for i, chunk_text in enumerate(chunks_texto):
-            embedding = _generate_embedding(chunk_text)
+            try:
+                embedding = _generate_embedding(chunk_text)
+            except Exception as e:
+                print(f"[ERRO] Falha ao gerar embedding para chunk {i}: {e}")
+                embedding = [] # Fallback para evitar quebra total do loop
 
             chunk_id = str(uuid.uuid4())
             content_hash = _calculate_hash(chunk_text)
