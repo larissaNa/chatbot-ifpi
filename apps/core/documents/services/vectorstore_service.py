@@ -12,7 +12,7 @@ def setup_vectorstore():
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
         embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001"
+            model="models/text-embedding-004"
         )
 
         vectorstore = Chroma(
@@ -22,7 +22,11 @@ def setup_vectorstore():
 
     else:
         # 🟢 DESENVOLVIMENTO - local
-        from langchain_huggingface import HuggingFaceEmbeddings
+        try:
+            from langchain_huggingface import HuggingFaceEmbeddings
+        except ImportError:
+            print("[ERRO] langchain_huggingface não encontrada. Use 'pip install langchain-huggingface' para dev.")
+            raise
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.abspath(os.path.join(base_dir, "..", "..", "..", ".."))

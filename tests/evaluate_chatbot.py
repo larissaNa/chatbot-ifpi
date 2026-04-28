@@ -5,7 +5,8 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from sentence_transformers import SentenceTransformer, util
+# Imports pesados movidos para dentro das funcoes para suportar producao leve
+# from sentence_transformers import SentenceTransformer, util
 
 current_dir = os.getcwd()
 if current_dir not in sys.path:
@@ -38,7 +39,10 @@ def load_dataset(path: str) -> list[EvalItem]:
     return [x for x in out if x.pergunta and x.resposta_esperada]
 
 
-def embed_similarity(model: SentenceTransformer, a: str, b: str) -> float:
+def embed_similarity(model, a: str, b: str) -> float:
+    if model is None:
+        return 0.0
+    from sentence_transformers import util
     ea = model.encode(a, convert_to_tensor=True)
     eb = model.encode(b, convert_to_tensor=True)
     return float(util.cos_sim(ea, eb).item())
@@ -89,8 +93,16 @@ def main():
         return 2
 
     model_name = os.getenv("EVAL_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-    model = SentenceTransformer(model_name)
-
+    
+    ENV = os.getenv("ENV", "dev")
+    model = None
+    if ENV != "prod":
+        try:
+            from sentence_transformers import SentenceTransformer
+            model = SentenceTransformer(model_name)
+        except ImportError:
+            print("[AVISO] sentence_transformers nao encontrada. Avaliacao semantica sera ignorada.")
+    
     rows: list[dict[str, Any]] = []
     for item in dataset:
         if dry_run:
