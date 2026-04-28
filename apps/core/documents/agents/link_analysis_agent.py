@@ -19,13 +19,17 @@ def buscar_documentos_oficiais():
     fontes = DocumentoOficial.query.filter_by(ativo=True).all()
     pdf_links = []
 
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    }
+
     for fonte in fontes:
         try:
             url = fonte.url.strip()
             if url.endswith(".pdf"):
                 pdf_links.append(url)
             else:
-                resp = requests.get(url, timeout=10)
+                resp = requests.get(url, timeout=10, headers=headers)
                 soup = BeautifulSoup(resp.text, "html.parser")
                 for a in soup.find_all("a", href=True):
                     href = a["href"]
@@ -45,7 +49,7 @@ def _analise_basica_url(url: str) -> dict:
 
     resultado = {
         "url": url,
-        "status": "ERRO",
+        "status": "erro",
         "tipo_conteudo": "INVALIDO",
         "titulo": None,
         "mime_type": None,
@@ -63,12 +67,29 @@ def _analise_basica_url(url: str) -> dict:
         resultado["observacoes"] = "URL invalida."
         return resultado
 
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    }
+
     try:
-        head_resp = requests.head(url, allow_redirects=True, timeout=10)
+        # Tenta HEAD primeiro, mas permite fallback para GET se falhar ou for bloqueado
+        head_resp = requests.head(url, allow_redirects=True, timeout=10, headers=headers)
         status_code = head_resp.status_code
+        
+        # Se o HEAD retornar erro (comum em servidores que bloqueiam HEAD), tenta GET
+        if status_code in (403, 404, 405):
+            get_resp = requests.get(url, stream=True, timeout=10, headers=headers)
+            status_code = get_resp.status_code
+            head_resp = get_resp # Usa o objeto do GET para pegar headers
     except Exception as e:
-        resultado["observacoes"] = f"Erro ao acessar URL (HEAD): {e}"
-        return resultado
+        # Fallback final para GET caso HEAD de erro de conexao
+        try:
+            get_resp = requests.get(url, stream=True, timeout=10, headers=headers)
+            status_code = get_resp.status_code
+            head_resp = get_resp
+        except Exception as e2:
+            resultado["observacoes"] = f"Erro ao acessar URL: {e2}"
+            return resultado
 
     mime_type = head_resp.headers.get("Content-Type")
     if mime_type:
@@ -100,7 +121,7 @@ def _analise_basica_url(url: str) -> dict:
         resultado["observacoes"] = f"URL inacessivel (status HTTP {status_code})."
         return resultado
 
-    resultado["status"] = "SUCESSO"
+    resultado["status"] = "sucesso"
 
     if (mime_type and mime_type.lower() == "application/pdf") or parsed.path.lower().endswith(".pdf"):
         resultado["tipo_conteudo"] = "PDF_DIRETO"
@@ -129,22 +150,22 @@ def _analise_basica_url(url: str) -> dict:
         return resultado
 
     if mime_type and "html" not in mime_type.lower():
-        resultado["status"] = "ERRO"
+        resultado["status"] = "erro"
         resultado["tipo_conteudo"] = "INVALIDO"
         resultado["observacoes"] = f"Tipo de conteudo nao suportado: {mime_type}."
         resultado["proximo_agente"] = "NENHUM"
         return resultado
 
     try:
-        resp = requests.get(url, timeout=15)
+        resp = requests.get(url, timeout=15, headers=headers)
     except Exception as e:
-        resultado["status"] = "ERRO"
+        resultado["status"] = "erro"
         resultado["tipo_conteudo"] = "INVALIDO"
         resultado["observacoes"] = f"Erro ao carregar HTML: {e}"
         return resultado
 
     if resp.status_code != 200:
-        resultado["status"] = "ERRO"
+        resultado["status"] = "erro"
         resultado["tipo_conteudo"] = "INVALIDO"
         resultado["observacoes"] = f"URL inacessivel na requisicao GET (status HTTP {resp.status_code})."
         return resultado

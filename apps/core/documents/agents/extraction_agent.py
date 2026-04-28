@@ -49,8 +49,11 @@ def _detect_language(text: str) -> str:
 
 def _extract_from_pdf_url(url: str):
     observacoes = []
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    }
     try:
-        resp = requests.get(url, timeout=30)
+        resp = requests.get(url, timeout=30, headers=headers)
     except Exception as e:
         return "", 0, "PDF_TEXTUAL", [f"Erro ao baixar PDF: {e}"]
     if resp.status_code != 200:
@@ -84,8 +87,11 @@ def _extract_from_pdf_url(url: str):
 
 def _extract_from_html_url(url: str):
     observacoes = []
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    }
     try:
-        resp = requests.get(url, timeout=30)
+        resp = requests.get(url, timeout=30, headers=headers)
     except Exception as e:
         return None, "", 0, [f"Erro ao baixar HTML: {e}"]
     if resp.status_code != 200:
@@ -197,10 +203,14 @@ def extrair_conteudo(analise: dict):
     else:
         observacoes.append(f"tipo_conteudo invalido ou nao suportado: {tipo_conteudo}")
         tipo_extracao_global = "HTML"
+    conteudo_total = "\n\n".join([doc["texto"] for doc in documentos if doc.get("texto")])
+    
     return {
+        "status": "sucesso" if conteudo_total else "erro",
         "fonte": fonte,
         "tipo_extracao": tipo_extracao_global or "HTML",
         "documentos": documentos,
+        "conteudo": conteudo_total,
         "observacoes": " ".join(observacoes).strip(),
-        "proximo_agente": "AGENTE_PROCESSAMENTO",
+        "proximo_agente": "AGENTE_PROCESSAMENTO" if conteudo_total else "NENHUM",
     }

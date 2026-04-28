@@ -55,12 +55,20 @@ def executar_revisao_documento(doc_id):
     log_to_terminal_and_db(f"Analisando link: {doc.url}", "LINK_ANALYZER", "START", doc_id=doc.id)
     try:
         resultado_analise = analisar_link.invoke({"url": doc.url})
-        if resultado_analise.get("status") == "erro":
-            msg = f"Erro na análise do link: {resultado_analise.get('mensagem')}"
+        status_analise = str(resultado_analise.get("status", "")).lower()
+        if status_analise == "erro":
+            msg = f"Erro na análise do link: {resultado_analise.get('mensagem') or resultado_analise.get('observacoes')}"
             log_to_terminal_and_db(msg, "LINK_ANALYZER", "ERROR", doc_id=doc.id)
             return {"status": "erro", "mensagem": msg}
+        
+        tipo_conteudo = resultado_analise.get("tipo_conteudo")
+        if tipo_conteudo == "INVALIDO":
+            msg = f"Link invalidado: {resultado_analise.get('observacoes')}"
+            log_to_terminal_and_db(msg, "LINK_ANALYZER", "ERROR", doc_id=doc.id)
+            return {"status": "erro", "mensagem": msg}
+
         log_to_terminal_and_db(
-            f"Link analisado: {resultado_analise.get('tipo_conteudo')}",
+            f"Link analisado: {tipo_conteudo}",
             "LINK_ANALYZER",
             "SUCCESS",
             doc_id=doc.id,
@@ -73,8 +81,9 @@ def executar_revisao_documento(doc_id):
     log_to_terminal_and_db("Iniciando extração de conteúdo...", "EXTRACTOR", "START", doc_id=doc.id)
     try:
         resultado_extracao = extrair_conteudo.invoke({"analise": resultado_analise})
-        if resultado_extracao.get("status") == "erro":
-            msg = f"Erro na extração: {resultado_extracao.get('mensagem')}"
+        status_extracao = str(resultado_extracao.get("status", "")).lower()
+        if status_extracao == "erro" or not resultado_extracao.get("conteudo"):
+            msg = f"Erro na extração: {resultado_extracao.get('mensagem') or 'Conteúdo vazio'}"
             log_to_terminal_and_db(msg, "EXTRACTOR", "ERROR", doc_id=doc.id)
             return {"status": "erro", "mensagem": msg}
         log_to_terminal_and_db(
