@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from langchain_core.tools import tool
 
 from .download_utils import baixar_pdf_resiliente
+from apps.core.utils.fetcher import fetch_url_content
 
 logger = logging.getLogger(__name__)
 
@@ -86,15 +87,11 @@ def _extract_from_pdf_url(url: str):
 
 def _extract_from_html_url(url: str):
     observacoes = []
-    # Usamos requests diretamente para HTML por enquanto, ou podemos usar o utilitário se quisermos 
-    # Mas o requisito foca em PDF. Vamos manter requests aqui por simplicidade, 
-    # mas usando a lógica de download resiliente se preferir.
-    # Por segurança, vamos usar o baixar_pdf_resiliente que já lida com proxy e fallback.
+    # Usamos o novo fetcher robusto que suporta fallback e proxy
     try:
-        content = baixar_pdf_resiliente(url)
-        html = content.decode('utf-8', errors='ignore')
+        html = fetch_url_content(url)
     except Exception as e:
-        return None, "", 0, [f"Erro ao baixar HTML resiliente: {e}"]
+        return None, "", 0, [f"Erro ao baixar HTML com fetcher robusto: {e}"]
         
     soup = BeautifulSoup(html, "lxml")
     for tag in soup(["script", "style", "nav", "header", "footer", "aside", "noscript"]):

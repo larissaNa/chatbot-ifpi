@@ -7,6 +7,7 @@ from langchain_core.tools import tool
 
 from apps import db
 from apps.authentication import DocumentoOficial
+from apps.core.utils.fetcher import fetch_url_content
 
 
 @tool
@@ -25,8 +26,8 @@ def buscar_documentos_oficiais():
             if url.endswith(".pdf"):
                 pdf_links.append(url)
             else:
-                resp = requests.get(url, timeout=10)
-                soup = BeautifulSoup(resp.text, "html.parser")
+                html = fetch_url_content(url)
+                soup = BeautifulSoup(html, "html.parser")
                 for a in soup.find_all("a", href=True):
                     href = a["href"]
                     if href.lower().endswith(".pdf"):
@@ -153,23 +154,13 @@ def _analise_basica_url(url: str) -> dict:
         return resultado
 
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        resp = requests.get(url, timeout=15, headers=headers)
+        html = fetch_url_content(url)
     except Exception as e:
         resultado["status"] = "erro"
         resultado["tipo_conteudo"] = "INVALIDO"
         resultado["observacoes"] = f"Erro ao carregar HTML: {e}"
         return resultado
 
-    if resp.status_code != 200:
-        resultado["status"] = "erro"
-        resultado["tipo_conteudo"] = "INVALIDO"
-        resultado["observacoes"] = f"URL inacessivel na requisicao GET (status HTTP {resp.status_code})."
-        return resultado
-
-    html = resp.text or ""
     soup = BeautifulSoup(html, "html.parser")
 
     titulo_tag = soup.find("title")

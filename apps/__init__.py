@@ -4,6 +4,7 @@ Copyright (c) 2019 - present AppSeed.us
 """
 
 import os
+import time
 
 from flask import Flask
 from flask_login import LoginManager
@@ -36,20 +37,30 @@ def configure_database(app):
         engine_options.setdefault("pool_pre_ping", True)
         app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
 
-        try:
-            db.create_all()
-        except Exception as e:
-            print("DB Error:", e)
-            basedir = os.path.abspath(os.path.dirname(__file__))
-            app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "db.sqlite3")
+        retries = 5
+        while retries > 0:
             try:
-                try:
-                    db.engine.dispose()
-                except Exception:
-                    pass
                 db.create_all()
-            except Exception as e2:
-                print("DB Error:", e2)
+                print("Conexão com o banco de dados estabelecida com sucesso.")
+                break
+            except Exception as e:
+                retries -= 1
+                print(f"Erro ao conectar ao banco de dados: {e}. Tentando novamente em 5 segundos... ({retries} tentativas restantes)")
+                if retries == 0:
+                    print("Falha ao conectar ao banco de dados após várias tentativas. Alternando para SQLite.")
+                    basedir = os.path.abspath(os.path.dirname(__file__))
+                    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "db.sqlite3")
+                    try:
+                        try:
+                            db.engine.dispose()
+                        except Exception:
+                            pass
+                        db.create_all()
+                        print("Banco de dados SQLite configurado como fallback.")
+                    except Exception as e2:
+                        print("Erro fatal ao configurar SQLite fallback:", e2)
+                else:
+                    time.sleep(5)
 
     @app.teardown_request
     def shutdown_session(exception=None):

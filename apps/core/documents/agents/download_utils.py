@@ -6,18 +6,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from playwright.sync_api import sync_playwright
+from apps.core.utils.fetcher import get_proxies
 
 # Configuração de Log
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def _get_proxies():
-    """Lê proxies das variáveis de ambiente."""
-    http = os.getenv("PROXY_HTTP")
-    https = os.getenv("PROXY_HTTPS")
-    if http and https:
-        return {"http": http, "https": https}
-    return None
 
 def _get_robust_session():
     """Configura uma sessão requests robusta."""
@@ -46,12 +39,14 @@ def baixar_pdf_resiliente(url: str) -> bytes:
     Tenta baixar um PDF usando requests com fallback para Playwright
     em caso de bloqueio anti-bot ou erro HTTP.
     """
-    proxies = _get_proxies()
+    proxies = get_proxies()
+    # Verifica se os proxies são válidos
+    valid_proxies = {k: v for k, v in proxies.items() if v} if proxies else None
     session = _get_robust_session()
     
     # 1. Tentativa com Requests
     try:
-        resp = session.get(url, timeout=30, stream=True, proxies=proxies)
+        resp = session.get(url, timeout=30, stream=True, proxies=valid_proxies)
         content = resp.content # Força leitura completa
         
         # Validação de Bloqueio
