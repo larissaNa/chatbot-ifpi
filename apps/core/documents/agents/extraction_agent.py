@@ -82,6 +82,12 @@ def _extract_from_pdf_url(url: str):
             tipo_extracao = "PDF_OCR"
             observacoes.append("PDF provavelmente escaneado. OCR nao aplicado ou incompleto.")
     texto = _normalize_text(raw_text)
+    
+    # Validação obrigatória de conteúdo extraído
+    if not texto or len(texto.strip()) < 100:
+        logger.error(f"[EXTRACTOR] Falha na extração de texto do PDF {url}: Conteúdo insuficiente ({len(texto) if texto else 0} caracteres)")
+        return "", 0, "PDF_TEXTUAL", ["Falha na extração de texto do PDF ou conteúdo insuficiente (< 100 caracteres)."]
+
     return texto, num_pages, tipo_extracao, observacoes
 
 

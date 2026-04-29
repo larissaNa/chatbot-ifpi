@@ -62,6 +62,7 @@ def chatbot():
             db.session.add(user_message)
             db.session.add(bot_message)
             db.session.commit()
+            print(f"[DEBUG][CHAT] Mensagens salvas com sucesso. ID User: {user_message.id}, ID Bot: {bot_message.id}, DB: {db.engine.url}")
             persist_user_memories(
                 user_id=user_id,
                 thread_id=thread_id,

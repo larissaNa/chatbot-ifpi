@@ -73,27 +73,19 @@ def retrieve_with_threshold(
     pairs1: list[tuple[Any, float]] = []
     if hasattr(vectorstore, "similarity_search_with_relevance_scores"):
         try:
-            pairs1 = vectorstore.similarity_search_with_relevance_scores(q, k=k)
+            # Substituído por similarity_search_with_score para evitar erro de intervalo [0,1]
+            # O modelo paraphrase-multilingual retorna scores em outro intervalo.
+            pairs1 = vectorstore.similarity_search_with_score(q, k=k)
         except Exception:
             pairs1 = []
 
     pairs2: list[tuple[Any, float]] = []
-    if hasattr(vectorstore, "similarity_search_with_score"):
-        try:
-            pairs2 = vectorstore.similarity_search_with_score(q, k=k)
-        except Exception:
-            pairs2 = []
-
+    # pairs2 removido para evitar duplicidade, já que pairs1 agora usa similarity_search_with_score
+    
     combined: list[tuple[Any, float]] = []
-    for doc, rel in pairs1:
-        try:
-            r = float(rel)
-        except Exception:
-            r = 0.0
-        if r < 0.0 or r > 1.0:
-            r = 1.0 / (1.0 + abs(r))
-        combined.append((doc, r))
-    for doc, score in pairs2:
+    for doc, score in pairs1:
+        # Normalização do score: o modelo retorna [-1, 1], mapeamos para [0, 1]
+        # Se for distância L2 (Chroma padrão), o score pode ser > 1.
         combined.append((doc, _score_to_relevance(float(score))))
 
     seen_map: dict[str, tuple[Any, float]] = {}

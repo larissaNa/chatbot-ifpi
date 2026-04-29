@@ -93,6 +93,12 @@ def processar_conteudo(extracao: dict) -> dict:
 
     for doc in documentos:
         texto = doc.get("texto", doc.get("conteudo", ""))
+        
+        # Validação: Não gerar chunks se o conteúdo for inválido ou muito curto
+        if not texto or len(texto.strip()) < 100:
+            print(f"[PROCESSOR][WARN] Ignorando documento {doc.get('titulo')} devido a conteúdo insuficiente.")
+            continue
+
         titulo = doc.get("titulo", "Sem titulo")
         tipo = doc.get("tipo", "desconhecido")
         metadata_original = doc.get("metadata", {})

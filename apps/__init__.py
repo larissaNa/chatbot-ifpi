@@ -41,11 +41,11 @@ def configure_database(app):
         while retries > 0:
             try:
                 db.create_all()
-                print("Conexão com o banco de dados estabelecida com sucesso.")
+                print(f"Conexão com o banco de dados estabelecida com sucesso. URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
                 break
             except Exception as e:
                 retries -= 1
-                print(f"Erro ao conectar ao banco de dados: {e}. Tentando novamente em 5 segundos... ({retries} tentativas restantes)")
+                print(f"Erro ao conectar ao banco de dados ({app.config['SQLALCHEMY_DATABASE_URI']}): {e}. Tentando novamente em 5 segundos... ({retries} tentativas restantes)")
                 if retries == 0:
                     print("Falha ao conectar ao banco de dados após várias tentativas. Alternando para SQLite.")
                     basedir = os.path.abspath(os.path.dirname(__file__))
