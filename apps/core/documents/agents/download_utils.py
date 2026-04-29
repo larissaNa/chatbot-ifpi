@@ -6,7 +6,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from playwright.sync_api import sync_playwright
-from apps.core.utils.fetcher import get_proxies
+from apps.core.utils.fetcher import get_proxies, get_playwright_proxy
 
 # Configuração de Log
 logging.basicConfig(level=logging.INFO)
@@ -76,13 +76,13 @@ def baixar_pdf_resiliente(url: str) -> bytes:
     logger.info("[DOWNLOAD] bloqueado ou erro, usando playwright")
     
     try:
+        proxy_config = get_playwright_proxy()
         with sync_playwright() as p:
-            # Configuração de Proxy para Playwright
-            launch_args = {}
-            if proxies and "http" in proxies:
-                launch_args["proxy"] = {"server": proxies["http"]}
-                
-            browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
+            browser = p.chromium.launch(
+                headless=True, 
+                proxy=proxy_config,
+                args=["--disable-blink-features=AutomationControlled"]
+            )
             
             # Contexto com Viewport e UserAgent realistas
             context = browser.new_context(

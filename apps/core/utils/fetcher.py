@@ -41,10 +41,18 @@ def get_playwright_proxy():
 
 def fetch_pdf(url: str) -> bytes:
     """
-    Download robusto de arquivos PDF usando requests com proxy.
+    Download robusto de arquivos PDF usando requests com proxy e headers realistas.
     """
     print(f"[FETCH] Baixando PDF via requests: {url}")
     session = requests.Session()
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/pdf,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+    session.headers.update(headers)
+    
     proxies = get_proxies()
     valid_proxies = {k: v for k, v in proxies.items() if v}
     
@@ -52,7 +60,8 @@ def fetch_pdf(url: str) -> bytes:
         url,
         proxies=valid_proxies if valid_proxies else None,
         timeout=30,
-        stream=True
+        stream=True,
+        allow_redirects=True
     )
     
     if response.status_code != 200:
@@ -60,7 +69,10 @@ def fetch_pdf(url: str) -> bytes:
     
     content = response.content
     if not content.startswith(b"%PDF-"):
-        raise Exception("O conteúdo baixado não é um PDF válido.")
+        # Se não começar com %PDF-, pode ser um HTML de erro mascarado
+        if b"<html" in content.lower() or b"<!doctype html" in content.lower():
+            raise Exception("O servidor retornou HTML em vez de um PDF (possível bloqueio ou erro).")
+        raise Exception(f"O conteúdo baixado não é um PDF válido (Início: {content[:10]!r}).")
         
     return content
 

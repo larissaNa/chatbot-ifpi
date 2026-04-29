@@ -7,7 +7,7 @@ from langchain_core.tools import tool
 
 from apps import db
 from apps.authentication import DocumentoOficial
-from apps.core.utils.fetcher import fetch_url_content
+from apps.core.utils.fetcher import fetch_url_content, get_proxies
 
 
 @tool
@@ -67,25 +67,28 @@ def _analise_basica_url(url: str) -> dict:
         return resultado
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
     }
 
+    proxies = get_proxies()
+    valid_proxies = {k: v for k, v in proxies.items() if v} if proxies else None
+
     try:
-        head_resp = requests.head(url, allow_redirects=True, timeout=10, headers=headers)
+        # Tentamos um GET stream=True em vez de HEAD, pois muitos servidores (como o do IFPI)
+        # bloqueiam ou retornam 403 para requisições HEAD puras.
+        head_resp = requests.get(url, stream=True, allow_redirects=True, timeout=15, headers=headers, proxies=valid_proxies)
         status_code = head_resp.status_code
-        # Se HEAD retornar 404, 403 ou 405, tentamos um GET leve
-        if status_code in (404, 403, 405):
-            head_resp = requests.get(url, stream=True, allow_redirects=True, timeout=10, headers=headers)
+        
+        # Se ainda der 403, tentamos um GET normal (sem stream) como último esforço no requests
+        if status_code == 403:
+            head_resp = requests.get(url, allow_redirects=True, timeout=15, headers=headers, proxies=valid_proxies)
             status_code = head_resp.status_code
     except Exception as e:
-        # Fallback para GET se HEAD falhar completamente
-        try:
-            head_resp = requests.get(url, stream=True, allow_redirects=True, timeout=10, headers=headers)
-            status_code = head_resp.status_code
-        except Exception as e2:
-            resultado["status"] = "erro"
-            resultado["observacoes"] = f"Erro ao acessar URL: {e2}"
-            return resultado
+        resultado["status"] = "erro"
+        resultado["observacoes"] = f"Erro ao acessar URL: {e}"
+        return resultado
 
     mime_type = head_resp.headers.get("Content-Type")
     if mime_type:
@@ -114,6 +117,15 @@ def _analise_basica_url(url: str) -> dict:
             pass
 
     if status_code != 200:
+        # Se for um PDF e deu 403, não desistimos ainda. Marcamos como PDF_DIRETO 
+        # e deixamos o agente de extração tentar o download robusto.
+        if parsed.path.lower().endswith(".pdf") and status_code == 403:
+            resultado["status"] = "sucesso"
+            resultado["tipo_conteudo"] = "PDF_DIRETO"
+            resultado["proximo_agente"] = "AGENTE_EXTRACAO"
+            resultado["observacoes"] = "Acesso inicial retornou 403, mas a URL parece ser um PDF. Tentando download robusto no proximo agente."
+            return resultado
+            
         resultado["status"] = "erro"
         resultado["observacoes"] = f"URL inacessivel (status HTTP {status_code})."
         return resultado
