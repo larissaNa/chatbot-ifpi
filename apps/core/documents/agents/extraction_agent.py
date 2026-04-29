@@ -1,11 +1,14 @@
 import re
 import uuid
+import logging
 
 import fitz
-import requests
 from bs4 import BeautifulSoup
 from langchain_core.tools import tool
 
+from .download_utils import baixar_pdf_resiliente
+
+logger = logging.getLogger(__name__)
 
 def _normalize_text(text: str) -> str:
     if not text:
@@ -49,17 +52,13 @@ def _detect_language(text: str) -> str:
 
 def _extract_from_pdf_url(url: str):
     observacoes = []
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
     try:
-        resp = requests.get(url, timeout=30, headers=headers)
+        content = baixar_pdf_resiliente(url)
     except Exception as e:
-        return "", 0, "PDF_TEXTUAL", [f"Erro ao baixar PDF: {e}"]
-    if resp.status_code != 200:
-        return "", 0, "PDF_TEXTUAL", [f"Erro ao baixar PDF: status HTTP {resp.status_code}"]
+        return "", 0, "PDF_TEXTUAL", [f"Erro ao baixar PDF resiliente: {e}"]
+        
     try:
-        pdf = fitz.open(stream=resp.content, filetype="pdf")
+        pdf = fitz.open(stream=content, filetype="pdf")
     except Exception as e:
         return "", 0, "PDF_TEXTUAL", [f"Erro ao abrir PDF: {e}"]
     texts = []
@@ -87,16 +86,16 @@ def _extract_from_pdf_url(url: str):
 
 def _extract_from_html_url(url: str):
     observacoes = []
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+    # Usamos requests diretamente para HTML por enquanto, ou podemos usar o utilitário se quisermos 
+    # Mas o requisito foca em PDF. Vamos manter requests aqui por simplicidade, 
+    # mas usando a lógica de download resiliente se preferir.
+    # Por segurança, vamos usar o baixar_pdf_resiliente que já lida com proxy e fallback.
     try:
-        resp = requests.get(url, timeout=30, headers=headers)
+        content = baixar_pdf_resiliente(url)
+        html = content.decode('utf-8', errors='ignore')
     except Exception as e:
-        return None, "", 0, [f"Erro ao baixar HTML: {e}"]
-    if resp.status_code != 200:
-        return None, "", 0, [f"Erro ao baixar HTML: status HTTP {resp.status_code}"]
-    html = resp.text or ""
+        return None, "", 0, [f"Erro ao baixar HTML resiliente: {e}"]
+        
     soup = BeautifulSoup(html, "lxml")
     for tag in soup(["script", "style", "nav", "header", "footer", "aside", "noscript"]):
         tag.decompose()

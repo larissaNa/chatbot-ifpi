@@ -11,6 +11,7 @@ COPY requirements.txt .
 
 RUN pip install --upgrade pip
 
+# Dependências para Playwright e Chromium
 RUN apt-get update && apt-get install -y \
     libcairo2 \
     libcairo2-dev \
@@ -24,10 +25,26 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     shared-mime-info \
     fonts-liberation \
-    fonts-dejavu-core && \
+    fonts-dejavu-core \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip install -r requirements.txt
+
+# Instala Chromium do Playwright
+RUN playwright install chromium
+RUN playwright install-deps chromium
 
 COPY . .
 

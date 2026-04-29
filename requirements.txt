@@ -36,3 +36,4 @@ langchain-chroma
 beautifulsoup4
 lxml
 pymupdf
+playwright
