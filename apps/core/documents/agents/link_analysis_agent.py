@@ -1,10 +1,7 @@
 from datetime import datetime
 from urllib.parse import urlparse
-import os
 
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 from langchain_core.tools import tool
 
@@ -12,131 +9,37 @@ from apps import db
 from apps.authentication import DocumentoOficial
 
 
-# =========================
-# 🔐 SESSION ROBUSTA
-# =========================
-def _get_robust_session():
-    session = requests.Session()
-
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Cache-Control": "max-age=0",
-    })
-
-    retry = Retry(
-        total=3,
-        backoff_factor=1,
-        status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["GET"]
-    )
-
-    adapter = HTTPAdapter(max_retries=retry)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-
-    return session
-
-
-# =========================
-# 🌐 PROXY (OPCIONAL)
-# =========================
-def _get_proxies():
-    http = os.getenv("PROXY_HTTP")
-    https = os.getenv("PROXY_HTTPS")
-
-    if http and https:
-        return {
-            "http": http,
-            "https": https
-        }
-    return None
-
-
-# =========================
-# 🔁 REQUEST COM FALLBACK
-# =========================
-def _make_request(session, url):
-    try:
-        resp = session.get(
-            url,
-            stream=True,
-            timeout=15,
-            allow_redirects=True
-        )
-
-        # 🔥 fallback se 403
-        if resp.status_code == 403:
-            proxies = _get_proxies()
-
-            if proxies:
-                print("[INFO] 403 detectado → tentando com proxy...")
-                resp = session.get(
-                    url,
-                    stream=True,
-                    timeout=20,
-                    allow_redirects=True,
-                    proxies=proxies
-                )
-
-        return resp
-
-    except Exception as e:
-        raise e
-
-
-# =========================
-# 📄 BUSCAR PDFs
-# =========================
 @tool
 def buscar_documentos_oficiais():
     """
-    usca todos os links (PDFs) cadastrados pelo administrador no banco de dados. 
-    Caso o link seja uma página, coleta todos os PDFs encontrados nela. 
+    Busca todos os links (PDFs) cadastrados pelo administrador no banco de dados.
+    Caso o link seja uma página, coleta todos os PDFs encontrados nela.
     Retorna uma lista de URLs válidas para download.
     """
     fontes = DocumentoOficial.query.filter_by(ativo=True).all()
     pdf_links = []
 
-    session = _get_robust_session()
-
     for fonte in fontes:
         try:
             url = fonte.url.strip()
-
             if url.endswith(".pdf"):
                 pdf_links.append(url)
-                continue
-
-            resp = _make_request(session, url)
-
-            if resp.status_code != 200:
-                continue
-
-            soup = BeautifulSoup(resp.text, "html.parser")
-
-            for a in soup.find_all("a", href=True):
-                href = a["href"]
-
-                if href.lower().endswith(".pdf"):
-                    if href.startswith("http"):
-                        pdf_links.append(href)
-                    else:
-                        pdf_links.append(requests.compat.urljoin(url, href))
-
+            else:
+                resp = requests.get(url, timeout=10)
+                soup = BeautifulSoup(resp.text, "html.parser")
+                for a in soup.find_all("a", href=True):
+                    href = a["href"]
+                    if href.lower().endswith(".pdf"):
+                        if href.startswith("http"):
+                            pdf_links.append(href)
+                        else:
+                            pdf_links.append(requests.compat.urljoin(url, href))
         except Exception as e:
             print(f"[Erro ao buscar PDFs em] {fonte.url} -> {e}")
 
     return list(set(pdf_links))
 
 
-# =========================
-# 🔍 ANALISADOR PRINCIPAL
-# =========================
 def _analise_basica_url(url: str) -> dict:
     url = (url or "").strip()
 
@@ -151,112 +54,189 @@ def _analise_basica_url(url: str) -> dict:
         "proximo_agente": "NENHUM",
     }
 
-    # validação básica
     if not url:
         resultado["status"] = "erro"
         resultado["observacoes"] = "URL vazia."
         return resultado
 
     parsed = urlparse(url)
-
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         resultado["status"] = "erro"
-        resultado["observacoes"] = "URL inválida."
+        resultado["observacoes"] = "URL invalida."
         return resultado
 
-    session = _get_robust_session()
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
 
-    # 🔁 request com fallback
     try:
-        resp = _make_request(session, url)
-        status_code = resp.status_code
+        head_resp = requests.head(url, allow_redirects=True, timeout=10, headers=headers)
+        status_code = head_resp.status_code
+        # Se HEAD retornar 404, 403 ou 405, tentamos um GET leve
+        if status_code in (404, 403, 405):
+            head_resp = requests.get(url, stream=True, allow_redirects=True, timeout=10, headers=headers)
+            status_code = head_resp.status_code
     except Exception as e:
-        resultado["status"] = "erro"
-        resultado["observacoes"] = f"Erro ao acessar URL: {e}"
-        return resultado
+        # Fallback para GET se HEAD falhar completamente
+        try:
+            head_resp = requests.get(url, stream=True, allow_redirects=True, timeout=10, headers=headers)
+            status_code = head_resp.status_code
+        except Exception as e2:
+            resultado["status"] = "erro"
+            resultado["observacoes"] = f"Erro ao acessar URL: {e2}"
+            return resultado
 
-    # MIME
-    mime_type = resp.headers.get("Content-Type")
+    mime_type = head_resp.headers.get("Content-Type")
     if mime_type:
         mime_type = mime_type.split(";")[0].strip()
-
     resultado["mime_type"] = mime_type
 
-    # atualizar banco
     try:
-        from flask import has_app_context
+        try:
+            from flask import has_app_context
 
-        if has_app_context():
+            in_app_context = bool(has_app_context())
+        except Exception:
+            in_app_context = False
+
+        if in_app_context:
             doc = DocumentoOficial.query.filter_by(url=url).first()
             if doc:
                 doc.ultima_verificacao = datetime.utcnow()
                 doc.ultimo_status_http = status_code
                 db.session.commit()
-    except:
-        db.session.rollback()
+    except Exception as e:
+        print(f"[analisar_link] erro ao atualizar DocumentoOficial: {e}")
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
 
-    # erro final
     if status_code != 200:
         resultado["status"] = "erro"
-        resultado["observacoes"] = f"Bloqueado (HTTP {status_code}) mesmo após fallback."
+        resultado["observacoes"] = f"URL inacessivel (status HTTP {status_code})."
         return resultado
 
-    # PDF direto
-    if (mime_type and "pdf" in mime_type.lower()) or parsed.path.lower().endswith(".pdf"):
+    resultado["status"] = "sucesso"
+
+    if (mime_type and mime_type.lower() == "application/pdf") or parsed.path.lower().endswith(".pdf"):
         resultado["tipo_conteudo"] = "PDF_DIRETO"
         resultado["proximo_agente"] = "AGENTE_EXTRACAO"
-        resultado["observacoes"] = "PDF acessado com sucesso."
+
+        url_lower = url.lower()
+        palavras = []
+        candidatos = [
+            "ifpi",
+            "instituto federal do piauí",
+            "resolucao",
+            "resolucao",
+            "portaria",
+            "norma",
+            "edital",
+        ]
+        for k in candidatos:
+            if k in url_lower:
+                palavras.append(k)
+
+        if palavras:
+            resultado["observacoes"] = "Indicios de documento oficial na URL: " + ", ".join(sorted(set(palavras)))
+        else:
+            resultado["observacoes"] = "Link PDF direto; analise de conteudo delegada ao proximo agente."
+
         return resultado
 
-    # conteúdo inválido
     if mime_type and "html" not in mime_type.lower():
         resultado["status"] = "erro"
-        resultado["observacoes"] = f"Tipo não suportado: {mime_type}"
+        resultado["tipo_conteudo"] = "INVALIDO"
+        resultado["observacoes"] = f"Tipo de conteudo nao suportado: {mime_type}."
+        resultado["proximo_agente"] = "NENHUM"
         return resultado
 
-    # HTML
     try:
-        html = resp.text
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        resp = requests.get(url, timeout=15, headers=headers)
     except Exception as e:
         resultado["status"] = "erro"
-        resultado["observacoes"] = f"Erro ao ler HTML: {e}"
+        resultado["tipo_conteudo"] = "INVALIDO"
+        resultado["observacoes"] = f"Erro ao carregar HTML: {e}"
         return resultado
 
+    if resp.status_code != 200:
+        resultado["status"] = "erro"
+        resultado["tipo_conteudo"] = "INVALIDO"
+        resultado["observacoes"] = f"URL inacessivel na requisicao GET (status HTTP {resp.status_code})."
+        return resultado
+
+    html = resp.text or ""
     soup = BeautifulSoup(html, "html.parser")
 
     titulo_tag = soup.find("title")
-    if titulo_tag:
+    if titulo_tag and titulo_tag.text.strip():
         resultado["titulo"] = titulo_tag.text.strip()
 
-    pdfs = []
+    pdfs_encontrados = []
     for a in soup.find_all("a", href=True):
-        href = a["href"]
-
+        href = a["href"].strip()
         if href.lower().endswith(".pdf"):
             pdf_url = href if href.startswith("http") else requests.compat.urljoin(url, href)
-            pdfs.append({"url": pdf_url})
+            descricao = (a.get_text() or "").strip() or ""
+            pdfs_encontrados.append({"url": pdf_url, "descricao": descricao})
 
-    resultado["pdfs_encontrados"] = pdfs
+    resultado["pdfs_encontrados"] = pdfs_encontrados
 
-    if pdfs:
+    texto_base = (resultado["titulo"] or "") + " " + soup.get_text(separator=" ", strip=True)[:5000]
+    texto_lower = texto_base.lower()
+    palavras_chave = []
+    candidatos_texto = [
+        "ifpi",
+        "instituto federal do piauí",
+        "resolucao",
+        "resolucao",
+        "portaria",
+        "norma",
+        "instrucao normativa",
+        "instrucao normativa",
+        "edital",
+        "comunicado",
+    ]
+    for k in candidatos_texto:
+        if k in texto_lower:
+            palavras_chave.append(k)
+
+    partes_obs = []
+    if pdfs_encontrados:
+        partes_obs.append(f"{len(pdfs_encontrados)} PDF(s) encontrado(s) na pagina.")
+    if palavras_chave:
+        partes_obs.append("Indicios de documento oficial: " + ", ".join(sorted(set(palavras_chave))))
+    if not partes_obs:
+        partes_obs.append("Pagina HTML analisada sem indicios fortes de documento oficial.")
+
+    resultado["observacoes"] = " ".join(partes_obs)
+
+    if pdfs_encontrados:
         resultado["tipo_conteudo"] = "HTML_COM_PDF"
         resultado["proximo_agente"] = "AGENTE_EXTRACAO"
-        resultado["observacoes"] = f"{len(pdfs)} PDFs encontrados."
     else:
-        resultado["tipo_conteudo"] = "HTML_TEXTO"
-        resultado["proximo_agente"] = "AGENTE_EXTRACAO"
-        resultado["observacoes"] = "Página HTML analisada."
+        tamanho_texto = len(soup.get_text(strip=True))
+        if tamanho_texto >= 50:
+            resultado["tipo_conteudo"] = "HTML_TEXTO"
+            resultado["proximo_agente"] = "AGENTE_EXTRACAO"
+        else:
+            resultado["tipo_conteudo"] = "INVALIDO"
+            resultado["proximo_agente"] = "NENHUM"
+            resultado["observacoes"] += " Conteudo textual insuficiente (< 50 caracteres)."
 
     return resultado
 
 
-# =========================
-# 🧠 TOOL FINAL
-# =========================
 @tool
 def analisar_link(url: str):
     """
-    Analisa um link institucional e retorna metadados sobre o conteúdo,
-    incluindo tipo (PDF, HTML), status de acesso e possíveis documentos encontrados.
+    Analisa um link institucional cadastrado, valida a URL e classifica
+    o tipo de conteudo, retornando um dicionario JSON-ready com metadados
+    e a indicacao do proximo agente da pipeline.
     """
     return _analise_basica_url(url)
+
