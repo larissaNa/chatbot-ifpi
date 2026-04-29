@@ -45,7 +45,7 @@ def _analise_basica_url(url: str) -> dict:
 
     resultado = {
         "url": url,
-        "status": "ERRO",
+        "status": "sucesso",
         "tipo_conteudo": "INVALIDO",
         "titulo": None,
         "mime_type": None,
@@ -55,20 +55,36 @@ def _analise_basica_url(url: str) -> dict:
     }
 
     if not url:
+        resultado["status"] = "erro"
         resultado["observacoes"] = "URL vazia."
         return resultado
 
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        resultado["status"] = "erro"
         resultado["observacoes"] = "URL invalida."
         return resultado
 
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+
     try:
-        head_resp = requests.head(url, allow_redirects=True, timeout=10)
+        head_resp = requests.head(url, allow_redirects=True, timeout=10, headers=headers)
         status_code = head_resp.status_code
+        # Se HEAD retornar 404, 403 ou 405, tentamos um GET leve
+        if status_code in (404, 403, 405):
+            head_resp = requests.get(url, stream=True, allow_redirects=True, timeout=10, headers=headers)
+            status_code = head_resp.status_code
     except Exception as e:
-        resultado["observacoes"] = f"Erro ao acessar URL (HEAD): {e}"
-        return resultado
+        # Fallback para GET se HEAD falhar completamente
+        try:
+            head_resp = requests.get(url, stream=True, allow_redirects=True, timeout=10, headers=headers)
+            status_code = head_resp.status_code
+        except Exception as e2:
+            resultado["status"] = "erro"
+            resultado["observacoes"] = f"Erro ao acessar URL: {e2}"
+            return resultado
 
     mime_type = head_resp.headers.get("Content-Type")
     if mime_type:
@@ -97,10 +113,11 @@ def _analise_basica_url(url: str) -> dict:
             pass
 
     if status_code != 200:
+        resultado["status"] = "erro"
         resultado["observacoes"] = f"URL inacessivel (status HTTP {status_code})."
         return resultado
 
-    resultado["status"] = "SUCESSO"
+    resultado["status"] = "sucesso"
 
     if (mime_type and mime_type.lower() == "application/pdf") or parsed.path.lower().endswith(".pdf"):
         resultado["tipo_conteudo"] = "PDF_DIRETO"
@@ -129,22 +146,25 @@ def _analise_basica_url(url: str) -> dict:
         return resultado
 
     if mime_type and "html" not in mime_type.lower():
-        resultado["status"] = "ERRO"
+        resultado["status"] = "erro"
         resultado["tipo_conteudo"] = "INVALIDO"
         resultado["observacoes"] = f"Tipo de conteudo nao suportado: {mime_type}."
         resultado["proximo_agente"] = "NENHUM"
         return resultado
 
     try:
-        resp = requests.get(url, timeout=15)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        resp = requests.get(url, timeout=15, headers=headers)
     except Exception as e:
-        resultado["status"] = "ERRO"
+        resultado["status"] = "erro"
         resultado["tipo_conteudo"] = "INVALIDO"
         resultado["observacoes"] = f"Erro ao carregar HTML: {e}"
         return resultado
 
     if resp.status_code != 200:
-        resultado["status"] = "ERRO"
+        resultado["status"] = "erro"
         resultado["tipo_conteudo"] = "INVALIDO"
         resultado["observacoes"] = f"URL inacessivel na requisicao GET (status HTTP {resp.status_code})."
         return resultado

@@ -49,8 +49,11 @@ def _detect_language(text: str) -> str:
 
 def _extract_from_pdf_url(url: str):
     observacoes = []
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
     try:
-        resp = requests.get(url, timeout=30)
+        resp = requests.get(url, timeout=30, headers=headers)
     except Exception as e:
         return "", 0, "PDF_TEXTUAL", [f"Erro ao baixar PDF: {e}"]
     if resp.status_code != 200:
@@ -84,8 +87,11 @@ def _extract_from_pdf_url(url: str):
 
 def _extract_from_html_url(url: str):
     observacoes = []
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
     try:
-        resp = requests.get(url, timeout=30)
+        resp = requests.get(url, timeout=30, headers=headers)
     except Exception as e:
         return None, "", 0, [f"Erro ao baixar HTML: {e}"]
     if resp.status_code != 200:

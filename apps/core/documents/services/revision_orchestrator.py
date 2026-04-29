@@ -50,10 +50,16 @@ def executar_revisao_documento(doc_id):
     log_to_terminal_and_db(f"Analisando link: {doc.url}", "LINK_ANALYZER", "START", doc_id=doc.id)
     try:
         resultado_analise = analisar_link.invoke({"url": doc.url})
-        if resultado_analise.get("status") == "erro":
-            msg = f"Erro na análise do link: {resultado_analise.get('mensagem')}"
+        if resultado_analise.get("status", "").lower() == "erro":
+            msg = f"Erro na análise do link: {resultado_analise.get('mensagem') or resultado_analise.get('observacoes')}"
             log_to_terminal_and_db(msg, "LINK_ANALYZER", "ERROR", doc_id=doc.id)
             return {"status": "erro", "mensagem": msg}
+        
+        if resultado_analise.get("proximo_agente") == "NENHUM":
+            msg = f"Fluxo interrompido: {resultado_analise.get('observacoes')}"
+            log_to_terminal_and_db(msg, "LINK_ANALYZER", "SKIP", doc_id=doc.id)
+            return {"status": "sucesso", "acao": "MANTER", "mensagem": msg}
+
         log_to_terminal_and_db(
             f"Link analisado: {resultado_analise.get('tipo_conteudo')}",
             "LINK_ANALYZER",
@@ -68,10 +74,16 @@ def executar_revisao_documento(doc_id):
     log_to_terminal_and_db("Iniciando extração de conteúdo...", "EXTRACTOR", "START", doc_id=doc.id)
     try:
         resultado_extracao = extrair_conteudo.invoke({"analise": resultado_analise})
-        if resultado_extracao.get("status") == "erro":
-            msg = f"Erro na extração: {resultado_extracao.get('mensagem')}"
+        if resultado_extracao.get("status", "").lower() == "erro":
+            msg = f"Erro na extração: {resultado_extracao.get('mensagem') or resultado_extracao.get('observacoes')}"
             log_to_terminal_and_db(msg, "EXTRACTOR", "ERROR", doc_id=doc.id)
             return {"status": "erro", "mensagem": msg}
+        
+        if not resultado_extracao.get("documentos"):
+            msg = f"Nenhum documento extraído: {resultado_extracao.get('observacoes')}"
+            log_to_terminal_and_db(msg, "EXTRACTOR", "SKIP", doc_id=doc.id)
+            return {"status": "sucesso", "acao": "MANTER", "mensagem": msg}
+
         log_to_terminal_and_db(
             f"Conteúdo extraído: {len(resultado_extracao.get('conteudo', ''))} caracteres",
             "EXTRACTOR",
