@@ -14,6 +14,8 @@ requests
 gunicorn==20.1.0
 Flask-Minify==0.37
 pydantic>=1.10
+transformers
+sentencepiece
 protobuf>=3.20.3,<6.0.0
 psycopg2-binary
 langchain
@@ -21,6 +23,7 @@ langchain-community
 langchain-core
 langchain-text-splitters
 chromadb
+sentence-transformers
 langgraph
 langsmith
 langchain-google-genai==3.0.0
@@ -28,6 +31,7 @@ langchain-google-vertexai==3.0.1
 langgraph-supervisor
 langchain-tavily
 apscheduler==3.11.0
+langchain-huggingface
 langchain-chroma
 beautifulsoup4
 lxml

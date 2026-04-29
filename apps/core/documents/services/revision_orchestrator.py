@@ -15,15 +15,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.pa
 
 def get_chroma_collection():
     import chromadb
-    ENV = os.getenv("ENV", "dev")
-
-    if ENV == "prod":
-        client = chromadb.EphemeralClient()
-    else:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.abspath(os.path.join(base_dir, "..", "..", "..", ".."))
-        persist_dir = os.path.join(project_root, "chroma_db")
-        client = chromadb.PersistentClient(path=persist_dir)
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(base_dir, "..", "..", "..", ".."))
+    persist_dir = os.path.join(project_root, "chroma_db")
+    client = chromadb.PersistentClient(path=persist_dir)
 
     return client.get_or_create_collection(name="crencas_institucionais")
 

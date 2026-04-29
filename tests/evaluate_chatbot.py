@@ -94,14 +94,12 @@ def main():
 
     model_name = os.getenv("EVAL_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
     
-    ENV = os.getenv("ENV", "dev")
     model = None
-    if ENV != "prod":
-        try:
-            from sentence_transformers import SentenceTransformer
-            model = SentenceTransformer(model_name)
-        except ImportError:
-            print("[AVISO] sentence_transformers nao encontrada. Avaliacao semantica sera ignorada.")
+    try:
+        from sentence_transformers import SentenceTransformer
+        model = SentenceTransformer(model_name)
+    except ImportError:
+        print("sentence-transformers não encontrado. Pulando similaridade semântica.")
     
     rows: list[dict[str, Any]] = []
     for item in dataset:

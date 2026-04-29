@@ -4,8 +4,6 @@ from datetime import datetime
 import numpy as np
 from langchain_core.tools import tool
 
-ENV = os.getenv("ENV", "dev")
-
 
 def _calculate_cosine_similarity(vec_a, vec_b):
     """
@@ -112,23 +110,16 @@ def revisar_crenca(dados_revisao: dict) -> dict:
         emb_old_np = np.array(emb_old, dtype=np.float32)
         emb_new_np = np.array(emb_new, dtype=np.float32)
 
-        if ENV == "prod":
+        try:
+            from sentence_transformers import util
+            sim_matrix = util.cos_sim(emb_old_np, emb_new_np)
+            if hasattr(sim_matrix, "cpu"):
+                max_similarities = sim_matrix.max(axis=1).values.cpu().numpy()
+            else:
+                max_similarities = sim_matrix.max(axis=1)
+        except ImportError:
             sim_matrix = _calculate_cosine_similarity(emb_old_np, emb_new_np)
             max_similarities = sim_matrix.max(axis=1)
-        else:
-            try:
-                from sentence_transformers import util
-                sim_matrix = util.cos_sim(emb_old_np, emb_new_np)
-                # O util.cos_sim retorna um tensor do PyTorch as vezes, ou numpy.
-                # Para garantir compatibilidade com o codigo original:
-                if hasattr(sim_matrix, "cpu"):
-                    max_similarities = sim_matrix.max(axis=1).values.cpu().numpy()
-                else:
-                    max_similarities = sim_matrix.max(axis=1)
-            except ImportError:
-                # Fallback caso a lib nao esteja instalada mesmo em dev
-                sim_matrix = _calculate_cosine_similarity(emb_old_np, emb_new_np)
-                max_similarities = sim_matrix.max(axis=1)
 
         avg_similarity = float(max_similarities.mean())
         min_similarity = float(max_similarities.min())

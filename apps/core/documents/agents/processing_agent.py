@@ -6,52 +6,23 @@ from datetime import datetime
 from langchain_core.tools import tool
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from langchain_huggingface import HuggingFaceEmbeddings
+
 _embedding_model = None
 
 def _get_embedding_model():
     global _embedding_model
-    if _embedding_model is not None:
-        return _embedding_model
-
-    ENV = os.getenv("ENV", "dev")
-
-    if ENV == "prod":
-        from langchain_google_genai import GoogleGenerativeAIEmbeddings
-        # O modelo 'embedding-001' as vezes exige o prefixo 'models/' mas o nome atualizado e 'text-embedding-004'
-        _embedding_model = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004"
+    if _embedding_model is None:
+        _embedding_model = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         )
-    else:
-        try:
-            from sentence_transformers import SentenceTransformer
-        except ImportError:
-            print("[ERRO] sentence_transformers não encontrada. Use 'pip install sentence-transformers' para dev.")
-            return None
-
-        model_name = os.getenv(
-            "EMBEDDING_MODEL_NAME",
-            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-        )
-        try:
-            _embedding_model = SentenceTransformer(model_name)
-        except Exception:
-            _embedding_model = None
     return _embedding_model
 
 
 def _generate_embedding(text: str) -> list:
     """Gera embedding para o texto."""
     embedding_model = _get_embedding_model()
-    if not embedding_model:
-        return []
-    
-    ENV = os.getenv("ENV", "dev")
-    if ENV == "prod":
-        # LangChain embeddings
-        return embedding_model.embed_query(text)
-    else:
-        # SentenceTransformer
-        return embedding_model.encode(text).tolist()
+    return embedding_model.embed_query(text)
 
 
 def _calculate_hash(text: str) -> str:
