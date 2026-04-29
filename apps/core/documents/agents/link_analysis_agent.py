@@ -250,4 +250,8 @@ def _analise_basica_url(url: str) -> dict:
 # =========================
 @tool
 def analisar_link(url: str):
+    """
+    Analisa um link institucional e retorna metadados sobre o conteúdo,
+    incluindo tipo (PDF, HTML), status de acesso e possíveis documentos encontrados.
+    """
     return _analise_basica_url(url)
