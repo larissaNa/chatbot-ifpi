@@ -74,9 +74,12 @@ def chatbot():
             response["bot_message_id"] = bot_message.id
             response["feedback_rating"] = None
             return jsonify(response)
-        except Exception:
+        except Exception as e:
+            import traceback
+            print(f"[ERROR][CHATBOT] Erro ao processar mensagem: {str(e)}")
+            print(traceback.format_exc())
             db.session.rollback()
-            return jsonify({"error": "Erro interno."}), 500
+            return jsonify({"error": f"Erro interno: {str(e)}"}), 500
 
     requested_thread_id = str(request.args.get("thread_id") or "").strip()
     thread_id = register_thread_id(requested_thread_id) if requested_thread_id else session.get("thread_id")

@@ -35,8 +35,13 @@ class Config(object):
         try:
             
             # Relational DBMS: PSQL, MySql
+            # Forçar driver psycopg2 para PostgreSQL
+            engine_prefix = DB_ENGINE
+            if 'postgresql' in DB_ENGINE.lower() and '+' not in DB_ENGINE:
+                engine_prefix = 'postgresql+psycopg2'
+
             SQLALCHEMY_DATABASE_URI = '{}://{}:{}@{}:{}/{}'.format(
-                DB_ENGINE,
+                engine_prefix,
                 DB_USERNAME,
                 DB_PASS,
                 DB_HOST,
