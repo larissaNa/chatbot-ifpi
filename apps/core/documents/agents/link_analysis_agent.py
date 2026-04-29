@@ -94,6 +94,11 @@ def _make_request(session, url):
 # =========================
 @tool
 def buscar_documentos_oficiais():
+    """
+    usca todos os links (PDFs) cadastrados pelo administrador no banco de dados. 
+    Caso o link seja uma página, coleta todos os PDFs encontrados nela. 
+    Retorna uma lista de URLs válidas para download.
+    """
     fontes = DocumentoOficial.query.filter_by(ativo=True).all()
     pdf_links = []
 
