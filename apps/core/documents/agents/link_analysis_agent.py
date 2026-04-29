@@ -1,13 +1,51 @@
 from datetime import datetime
 from urllib.parse import urlparse
+import time
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 from langchain_core.tools import tool
 
 from apps import db
 from apps.authentication import DocumentoOficial
 
+def _get_robust_session():
+    """
+    Retorna uma sessão do requests configurada com headers realistas e 
+    estratégia de retentativa (retry).
+    """
+    session = requests.Session()
+    
+    # Headers que simulam um navegador real de forma mais completa
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
+    })
+
+    # Configuração de Retry: 3 tentativas, backoff exponencial, status codes comuns de erro temporário
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["HEAD", "GET", "OPTIONS"]
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    
+    return session
 
 @tool
 def buscar_documentos_oficiais():
@@ -18,6 +56,7 @@ def buscar_documentos_oficiais():
     """
     fontes = DocumentoOficial.query.filter_by(ativo=True).all()
     pdf_links = []
+    session = _get_robust_session()
 
     for fonte in fontes:
         try:
@@ -25,7 +64,8 @@ def buscar_documentos_oficiais():
             if url.endswith(".pdf"):
                 pdf_links.append(url)
             else:
-                resp = requests.get(url, timeout=10)
+                resp = session.get(url, timeout=15)
+                resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, "html.parser")
                 for a in soup.find_all("a", href=True):
                     href = a["href"]
@@ -65,28 +105,22 @@ def _analise_basica_url(url: str) -> dict:
         resultado["observacoes"] = "URL invalida."
         return resultado
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+    session = _get_robust_session()
 
     try:
-        head_resp = requests.head(url, allow_redirects=True, timeout=10, headers=headers)
-        status_code = head_resp.status_code
-        # Se HEAD retornar 404, 403 ou 405, tentamos um GET leve
-        if status_code in (404, 403, 405):
-            head_resp = requests.get(url, stream=True, allow_redirects=True, timeout=10, headers=headers)
-            status_code = head_resp.status_code
+        # Tenta GET com stream=True primeiro (mais robusto que HEAD para bypassar 403)
+        # O stream=True garante que não baixaremos o corpo se não for necessário
+        resp = session.get(url, stream=True, allow_redirects=True, timeout=15)
+        status_code = resp.status_code
+        
+        # Se ainda assim der 403, pode ser um bloqueio de IP de datacenter.
+        # Infelizmente, sem proxy, isso é difícil de contornar, mas garantimos os melhores headers.
     except Exception as e:
-        # Fallback para GET se HEAD falhar completamente
-        try:
-            head_resp = requests.get(url, stream=True, allow_redirects=True, timeout=10, headers=headers)
-            status_code = head_resp.status_code
-        except Exception as e2:
-            resultado["status"] = "erro"
-            resultado["observacoes"] = f"Erro ao acessar URL: {e2}"
-            return resultado
+        resultado["status"] = "erro"
+        resultado["observacoes"] = f"Erro ao acessar URL: {e}"
+        return resultado
 
-    mime_type = head_resp.headers.get("Content-Type")
+    mime_type = resp.headers.get("Content-Type")
     if mime_type:
         mime_type = mime_type.split(";")[0].strip()
     resultado["mime_type"] = mime_type
@@ -152,24 +186,16 @@ def _analise_basica_url(url: str) -> dict:
         resultado["proximo_agente"] = "NENHUM"
         return resultado
 
+    # Se chegamos aqui, é um HTML. Se já temos o response do stream=True, 
+    # podemos ler o conteúdo dele sem fazer uma nova requisição.
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        resp = requests.get(url, timeout=15, headers=headers)
+        html = resp.text or ""
     except Exception as e:
         resultado["status"] = "erro"
         resultado["tipo_conteudo"] = "INVALIDO"
-        resultado["observacoes"] = f"Erro ao carregar HTML: {e}"
+        resultado["observacoes"] = f"Erro ao carregar corpo do HTML: {e}"
         return resultado
 
-    if resp.status_code != 200:
-        resultado["status"] = "erro"
-        resultado["tipo_conteudo"] = "INVALIDO"
-        resultado["observacoes"] = f"URL inacessivel na requisicao GET (status HTTP {resp.status_code})."
-        return resultado
-
-    html = resp.text or ""
     soup = BeautifulSoup(html, "html.parser")
 
     titulo_tag = soup.find("title")
