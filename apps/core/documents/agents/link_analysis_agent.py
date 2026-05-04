@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -61,9 +62,23 @@ def _analise_basica_url(url: str) -> dict:
         return resultado
 
     parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+    if parsed.scheme not in ("http", "https", "file"):
         resultado["status"] = "erro"
-        resultado["observacoes"] = "URL invalida."
+        resultado["observacoes"] = f"URL invalida ou esquema não suportado: {parsed.scheme}"
+        return resultado
+
+    if parsed.scheme == "file":
+        filepath = parsed.path
+        if not os.path.exists(filepath):
+            resultado["status"] = "erro"
+            resultado["observacoes"] = f"Arquivo local não encontrado: {filepath}"
+            return resultado
+        
+        resultado.update({
+            "tipo_conteudo": "PDF_DIRETO" if filepath.lower().endswith(".pdf") else "HTML_TEXTO",
+            "mime_type": "application/pdf" if filepath.lower().endswith(".pdf") else "text/html",
+            "proximo_agente": "AGENTE_EXTRACAO",
+        })
         return resultado
 
     headers = {
@@ -242,4 +257,3 @@ def analisar_link(url: str):
     e a indicacao do proximo agente da pipeline.
     """
     return _analise_basica_url(url)
-

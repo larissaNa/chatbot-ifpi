@@ -15,15 +15,24 @@
   <!-- Formulário inline de adição (POST para a mesma rota) -->
   <div class="card mb-4">
     <div class="card-body">
-      <form method="POST" class="row g-2">
-        <div class="col-md-4">
+      <form method="POST" class="row g-3" enctype="multipart/form-data">
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Título</label>
           <input type="text" name="titulo" placeholder="Título (ex: Manual do Servidor)" class="form-control" required>
         </div>
-        <div class="col-md-6">
-          <input type="url" name="url" placeholder="https://..." class="form-control" required>
+        <div class="col-md-4">
+          <label class="form-label fw-bold">URL (opcional se enviar arquivo)</label>
+          <input type="url" name="url" placeholder="https://..." class="form-control">
         </div>
-        <div class="col-md-2 d-grid">
-          <button class="btn btn-success">Salvar</button>
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Arquivo PDF (opcional se usar URL)</label>
+          <input type="file" name="arquivo" class="form-control" accept=".pdf">
+        </div>
+        <div class="col-md-2 d-grid align-items-end">
+          <button class="btn btn-success">Salvar Documento</button>
+        </div>
+        <div class="col-12 mt-2">
+          <small class="text-muted">Forneça uma <b>URL</b> ou faça o <b>upload de um PDF</b>. O sistema dará prioridade ao arquivo enviado.</small>
         </div>
       </form>
     </div>

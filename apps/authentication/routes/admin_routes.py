@@ -4,10 +4,13 @@ Rotas administrativas relacionadas a documentos, versoes, logs e feedbacks.
 """
 
 import re
-
-from flask import flash, redirect, render_template, request, url_for
-from flask_login import current_user, login_required
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from flask import flash, redirect, render_template, request, url_for, current_app
 from sqlalchemy import desc, select
+
+from flask_login import current_user, login_required
 
 from apps import db
 from apps.authentication import blueprint
@@ -93,14 +96,42 @@ def admin_docs():
         titulo = request.form.get("titulo")
         url = request.form.get("url")
         descricao = request.form.get("descricao")
+        arquivo = request.files.get("arquivo")
 
-        if not titulo or not url:
-            flash("Título e URL são obrigatórios!", "danger")
+        if not titulo:
+            flash("O título é obrigatório!", "danger")
+            return redirect(url_for("authentication_blueprint.admin_docs"))
+
+        # Se houver arquivo, salva localmente
+        if arquivo and arquivo.filename != "":
+            if not arquivo.filename.lower().endswith(".pdf"):
+                flash("Apenas arquivos PDF são permitidos.", "danger")
+                return redirect(url_for("authentication_blueprint.admin_docs"))
+
+            upload_dir = current_app.config["UPLOAD_FOLDER"]
+            if not os.path.exists(upload_dir):
+                os.makedirs(upload_dir)
+
+            filename = secure_filename(f"{uuid.uuid4()}_{arquivo.filename}")
+            filepath = os.path.join(upload_dir, filename)
+            arquivo.save(filepath)
+            
+            # Usamos um esquema especial 'file://' para identificar arquivos locais
+            url = f"file://{filepath}"
+
+        if not url:
+            flash("Você deve fornecer uma URL ou fazer o upload de um arquivo!", "danger")
         else:
             doc = DocumentoOficial(titulo=titulo, url=url, descricao=descricao)
             db.session.add(doc)
             db.session.commit()
-            flash("Documento adicionado com sucesso!", "success")
+            
+            # Inicia o processamento RAG imediatamente
+            try:
+                executar_revisao_documento(doc.id)
+                flash("Documento adicionado e enviado para processamento RAG!", "success")
+            except Exception as e:
+                flash(f"Documento adicionado, mas houve erro no processamento: {e}", "warning")
 
         return redirect(url_for("authentication_blueprint.admin_docs"))
 

@@ -140,7 +140,10 @@ def extrair_conteudo(analise: dict):
     documentos = []
     observacoes = []
     tipo_extracao_global = None
-    if tipo_conteudo == "PDF_DIRETO":
+    # Normaliza o tipo_conteudo para maiúsculas e remove espaços
+    tipo_conteudo_norm = str(tipo_conteudo).upper().strip() if tipo_conteudo else ""
+    
+    if tipo_conteudo_norm in ["PDF_DIRETO", "PDF"]:
         texto, paginas, tipo_extracao, obs = _extract_from_pdf_url(fonte)
         if obs:
             observacoes.extend(obs)
@@ -157,7 +160,7 @@ def extrair_conteudo(analise: dict):
         }
         documentos.append(doc)
         tipo_extracao_global = tipo_extracao
-    elif tipo_conteudo == "HTML_COM_PDF":
+    elif tipo_conteudo_norm == "HTML_COM_PDF":
         if not pdfs:
             observacoes.append("tipo_conteudo=HTML_COM_PDF mas pdfs_encontrados esta vazio.")
         for item in pdfs:
@@ -185,7 +188,7 @@ def extrair_conteudo(analise: dict):
                 tipo_extracao_global = "PDF_OCR"
         if not tipo_extracao_global:
             tipo_extracao_global = "PDF_TEXTUAL"
-    elif tipo_conteudo == "HTML_TEXTO":
+    elif tipo_conteudo_norm in ["HTML_TEXTO", "PAGINA"]:
         titulo, texto, paginas, obs = _extract_from_html_url(fonte)
         if obs:
             observacoes.extend(obs)
@@ -203,7 +206,7 @@ def extrair_conteudo(analise: dict):
         documentos.append(doc)
         tipo_extracao_global = "HTML"
     else:
-        observacoes.append(f"tipo_conteudo invalido ou nao suportado: {tipo_conteudo}")
+        observacoes.append(f"tipo_conteudo invalido ou nao suportado: {tipo_conteudo_norm}")
         tipo_extracao_global = "HTML"
     return {
         "fonte": fonte,

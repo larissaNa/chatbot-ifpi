@@ -38,7 +38,18 @@ def baixar_pdf_resiliente(url: str) -> bytes:
     """
     Tenta baixar um PDF usando requests com fallback para Playwright
     em caso de bloqueio anti-bot ou erro HTTP.
+    Também suporta arquivos locais via file://.
     """
+    if url.startswith("file://"):
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        filepath = parsed.path
+        if os.path.exists(filepath):
+            with open(filepath, "rb") as f:
+                return f.read()
+        else:
+            raise FileNotFoundError(f"Arquivo local não encontrado: {filepath}")
+
     proxies = get_proxies()
     # Verifica se os proxies são válidos
     valid_proxies = {k: v for k, v in proxies.items() if v} if proxies else None

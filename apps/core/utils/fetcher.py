@@ -179,11 +179,26 @@ def fetch_with_jina(url: str) -> str:
 def fetch_url_content(url: str) -> str:
     """
     Função principal com estratégia de fallback automático.
+    Suporta também arquivos locais via file://.
     """
     url = url.strip()
     print(f"[FETCH] Iniciando busca para: {url}")
     
-    # Roteamento para PDF
+    if url.startswith("file://"):
+        parsed = urlparse(url)
+        filepath = parsed.path
+        if not os.path.exists(filepath):
+            raise Exception(f"Arquivo local não encontrado: {filepath}")
+        
+        if url.lower().endswith(".pdf"):
+            with open(filepath, "rb") as f:
+                pdf_bytes = f.read()
+            return extract_text_from_pdf_bytes(pdf_bytes)
+        else:
+            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                return f.read()
+
+    # Roteamento para PDF remoto
     if url.lower().endswith(".pdf"):
         try:
             pdf_bytes = fetch_pdf(url)

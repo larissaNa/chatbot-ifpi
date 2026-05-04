@@ -6,4 +6,5 @@ chroma_db/
 hf_cache_v2/
 chroma.sqlite3
 apps/db.sqlite3
-
+crenças/
+uploads/
