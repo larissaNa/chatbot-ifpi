@@ -104,8 +104,10 @@ def admin_docs():
 
         # Se houver arquivo, salva localmente
         if arquivo and arquivo.filename != "":
-            if not arquivo.filename.lower().endswith(".pdf"):
-                flash("Apenas arquivos PDF são permitidos.", "danger")
+            allowed_extensions = {".pdf", ".docx", ".doc", ".txt"}
+            ext = os.path.splitext(arquivo.filename.lower())[1]
+            if ext not in allowed_extensions:
+                flash(f"Apenas arquivos {', '.join(allowed_extensions)} são permitidos.", "danger")
                 return redirect(url_for("authentication_blueprint.admin_docs"))
 
             upload_dir = current_app.config["UPLOAD_FOLDER"]

@@ -34,16 +34,20 @@ def _get_robust_session():
     session.mount("http://", adapter)
     return session
 
-def baixar_pdf_resiliente(url: str) -> bytes:
+def baixar_arquivo_resiliente(url: str) -> bytes:
     """
-    Tenta baixar um PDF usando requests com fallback para Playwright
+    Tenta baixar um arquivo usando requests com fallback para Playwright
     em caso de bloqueio anti-bot ou erro HTTP.
     Também suporta arquivos locais via file://.
     """
     if url.startswith("file://"):
         from urllib.parse import urlparse
         parsed = urlparse(url)
+        # Em Windows, o path pode vir como /C:/... ou /c:/...
         filepath = parsed.path
+        if filepath.startswith('/') and filepath[2] == ':':
+            filepath = filepath[1:]
+        
         if os.path.exists(filepath):
             with open(filepath, "rb") as f:
                 return f.read()
@@ -67,14 +71,17 @@ def baixar_pdf_resiliente(url: str) -> bytes:
             is_valid = False
         
         content_type = resp.headers.get("Content-Type", "").lower()
-        if "pdf" not in content_type and len(content) < 2000:
+        # Se for um PDF, faz validações extras. Se for outro tipo, confia mais no status 200.
+        if "pdf" in content_type and len(content) < 2000:
             # Conteúdo pequeno que não é PDF geralmente é página de erro/captcha
             logger.warning(f"[DOWNLOAD] Conteúdo suspeito (Tipo: {content_type}, Tamanho: {len(content)})")
             is_valid = False
             
-        if len(content) < 1000:
-            logger.warning(f"[DOWNLOAD] Bloqueado ou conteúdo insuficiente ({len(content)} bytes)")
-            is_valid = False
+        if len(content) < 50: # Txts podem ser bem pequenos
+            logger.warning(f"[DOWNLOAD] Conteúdo muito pequeno ({len(content)} bytes)")
+            # Não marcamos como inválido se for 200 e não for PDF, pode ser um TXT curto
+            if "pdf" in content_type:
+                is_valid = False
 
         if is_valid:
             logger.info("[DOWNLOAD] requests sucesso")

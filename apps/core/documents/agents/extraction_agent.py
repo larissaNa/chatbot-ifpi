@@ -1,12 +1,14 @@
 import re
 import uuid
 import logging
+import os
 
 import fitz
+import docx
 from bs4 import BeautifulSoup
 from langchain_core.tools import tool
 
-from .download_utils import baixar_pdf_resiliente
+from .download_utils import baixar_arquivo_resiliente
 from apps.core.utils.fetcher import fetch_url_content
 
 logger = logging.getLogger(__name__)
@@ -90,7 +92,7 @@ def _format_table_as_markdown(table) -> str:
 def _extract_from_pdf_url(url: str):
     observacoes = []
     try:
-        content = baixar_pdf_resiliente(url)
+        content = baixar_arquivo_resiliente(url)
     except Exception as e:
         return "", 0, "PDF_TEXTUAL", [f"Erro ao baixar PDF resiliente: {e}"]
         
@@ -175,6 +177,48 @@ def _extract_from_pdf_url(url: str):
     return texto, num_pages, tipo_extracao, observacoes
 
 
+def _extract_from_docx(content: bytes):
+    """Extrai texto de um arquivo .docx usando python-docx."""
+    from io import BytesIO
+    try:
+        doc = docx.Document(BytesIO(content))
+        full_text = []
+        for para in doc.paragraphs:
+            if para.text.strip():
+                full_text.append(para.text.strip())
+        
+        # Também extrai tabelas
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                if row_text:
+                    full_text.append(" | ".join(row_text))
+        
+        texto = "\n\n".join(full_text)
+        # Normalização
+        texto = _normalize_text(texto)
+        paginas = max(1, int(len(texto) / 1800))
+        return texto, paginas, "DOCX_TEXTUAL", []
+    except Exception as e:
+        return "", 0, "DOCX_TEXTUAL", [f"Erro ao extrair DOCX: {e}"]
+
+
+def _extract_from_txt(content: bytes):
+    """Extrai texto de um arquivo .txt."""
+    try:
+        # Tenta decodificar como utf-8, fallback para latin-1
+        try:
+            texto = content.decode("utf-8")
+        except UnicodeDecodeError:
+            texto = content.decode("latin-1")
+            
+        texto = _normalize_text(texto)
+        paginas = max(1, int(len(texto) / 1800))
+        return texto, paginas, "TXT_TEXTUAL", []
+    except Exception as e:
+        return "", 0, "TXT_TEXTUAL", [f"Erro ao extrair TXT: {e}"]
+
+
 def _extract_from_html_url(url: str):
     observacoes = []
     # Usamos o novo fetcher robusto que suporta fallback e proxy
@@ -244,6 +288,50 @@ def extrair_conteudo(analise: dict):
         }
         documentos.append(doc)
         tipo_extracao_global = tipo_extracao
+    elif tipo_conteudo_norm in ["DOCX", "WORD"]:
+        try:
+            content = baixar_arquivo_resiliente(fonte)
+            texto, paginas, tipo_extracao, obs = _extract_from_docx(content)
+            if obs:
+                observacoes.extend(obs)
+            idioma = _detect_language(texto)
+            doc = {
+                "id_documento": str(uuid.uuid4()),
+                "titulo": analise.get("titulo"),
+                "texto": texto,
+                "metadata": {
+                    "paginas_estimadas": paginas,
+                    "idioma": idioma or "desconhecido",
+                    "tipo_extracao": tipo_extracao,
+                },
+            }
+            documentos.append(doc)
+            tipo_extracao_global = tipo_extracao
+        except Exception as e:
+            observacoes.append(f"Erro ao processar DOCX: {e}")
+            tipo_extracao_global = "DOCX_TEXTUAL"
+    elif tipo_conteudo_norm == "TXT":
+        try:
+            content = baixar_arquivo_resiliente(fonte)
+            texto, paginas, tipo_extracao, obs = _extract_from_txt(content)
+            if obs:
+                observacoes.extend(obs)
+            idioma = _detect_language(texto)
+            doc = {
+                "id_documento": str(uuid.uuid4()),
+                "titulo": analise.get("titulo"),
+                "texto": texto,
+                "metadata": {
+                    "paginas_estimadas": paginas,
+                    "idioma": idioma or "desconhecido",
+                    "tipo_extracao": tipo_extracao,
+                },
+            }
+            documentos.append(doc)
+            tipo_extracao_global = tipo_extracao
+        except Exception as e:
+            observacoes.append(f"Erro ao processar TXT: {e}")
+            tipo_extracao_global = "TXT_TEXTUAL"
     elif tipo_conteudo_norm == "HTML_COM_PDF":
         if not pdfs:
             observacoes.append("tipo_conteudo=HTML_COM_PDF mas pdfs_encontrados esta vazio.")

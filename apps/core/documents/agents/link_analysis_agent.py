@@ -21,17 +21,18 @@ def buscar_documentos_oficiais():
     fontes = DocumentoOficial.query.filter_by(ativo=True).all()
     pdf_links = []
 
+    allowed_extensions = (".pdf", ".docx", ".txt")
     for fonte in fontes:
         try:
             url = fonte.url.strip()
-            if url.endswith(".pdf"):
+            if url.lower().endswith(allowed_extensions):
                 pdf_links.append(url)
             else:
                 html = fetch_url_content(url)
                 soup = BeautifulSoup(html, "html.parser")
                 for a in soup.find_all("a", href=True):
-                    href = a["href"]
-                    if href.lower().endswith(".pdf"):
+                    href = a["href"].lower()
+                    if href.endswith(allowed_extensions):
                         if href.startswith("http"):
                             pdf_links.append(href)
                         else:
@@ -69,14 +70,32 @@ def _analise_basica_url(url: str) -> dict:
 
     if parsed.scheme == "file":
         filepath = parsed.path
+        # Em Windows, o path pode vir como /C:/... ou /c:/...
+        if filepath.startswith('/') and filepath[2] == ':':
+            filepath = filepath[1:]
+            
         if not os.path.exists(filepath):
             resultado["status"] = "erro"
             resultado["observacoes"] = f"Arquivo local não encontrado: {filepath}"
             return resultado
         
+        ext = filepath.lower()
+        if ext.endswith(".pdf"):
+            tipo = "PDF_DIRETO"
+            mime = "application/pdf"
+        elif ext.endswith(".docx") or ext.endswith(".doc"):
+            tipo = "DOCX"
+            mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif ext.endswith(".txt"):
+            tipo = "TXT"
+            mime = "text/plain"
+        else:
+            tipo = "HTML_TEXTO"
+            mime = "text/html"
+
         resultado.update({
-            "tipo_conteudo": "PDF_DIRETO" if filepath.lower().endswith(".pdf") else "HTML_TEXTO",
-            "mime_type": "application/pdf" if filepath.lower().endswith(".pdf") else "text/html",
+            "tipo_conteudo": tipo,
+            "mime_type": mime,
             "proximo_agente": "AGENTE_EXTRACAO",
         })
         return resultado
@@ -91,7 +110,7 @@ def _analise_basica_url(url: str) -> dict:
     valid_proxies = {k: v for k, v in proxies.items() if v} if proxies else None
 
     try:
-        # Tentamos um GET stream=True em vez de HEAD, pois muitos servidores (como o do IFPI)
+        # Tentamos um GET stream=True em vez de HEAD, pois muitos servidores
         # bloqueiam ou retornam 403 para requisições HEAD puras.
         head_resp = requests.get(url, stream=True, allow_redirects=True, timeout=15, headers=headers, proxies=valid_proxies)
         status_code = head_resp.status_code
@@ -147,8 +166,18 @@ def _analise_basica_url(url: str) -> dict:
 
     resultado["status"] = "sucesso"
 
-    if (mime_type and mime_type.lower() == "application/pdf") or parsed.path.lower().endswith(".pdf"):
+    # Verificação de tipos de arquivo diretos (PDF, DOCX, TXT)
+    ext_lower = parsed.path.lower()
+    mime_lower = (mime_type or "").lower()
+
+    if mime_lower == "application/pdf" or ext_lower.endswith(".pdf"):
         resultado["tipo_conteudo"] = "PDF_DIRETO"
+    elif "officedocument.wordprocessingml.document" in mime_lower or ext_lower.endswith(".docx"):
+        resultado["tipo_conteudo"] = "DOCX"
+    elif mime_lower == "text/plain" or ext_lower.endswith(".txt"):
+        resultado["tipo_conteudo"] = "TXT"
+
+    if resultado["tipo_conteudo"] in ["PDF_DIRETO", "DOCX", "TXT"]:
         resultado["proximo_agente"] = "AGENTE_EXTRACAO"
 
         url_lower = url.lower()
@@ -156,7 +185,6 @@ def _analise_basica_url(url: str) -> dict:
         candidatos = [
             "ifpi",
             "instituto federal do piauí",
-            "resolucao",
             "resolucao",
             "portaria",
             "norma",
@@ -169,7 +197,7 @@ def _analise_basica_url(url: str) -> dict:
         if palavras:
             resultado["observacoes"] = "Indicios de documento oficial na URL: " + ", ".join(sorted(set(palavras)))
         else:
-            resultado["observacoes"] = "Link PDF direto; analise de conteudo delegada ao proximo agente."
+            resultado["observacoes"] = f"Link {resultado['tipo_conteudo']} direto; analise de conteudo delegada ao proximo agente."
 
         return resultado
 
