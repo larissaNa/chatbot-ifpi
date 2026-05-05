@@ -51,6 +51,42 @@ def _detect_language(text: str) -> str:
     return "desconhecido"
 
 
+def _format_table_as_markdown(table) -> str:
+    """Converte um objeto Table do PyMuPDF para Markdown e Texto Corrido (Verbalizado)."""
+    data = table.extract()
+    if not data:
+        return ""
+    
+    # 1. Gerar Markdown
+    md = "\n"
+    headers = []
+    for i, row in enumerate(data):
+        row_cleaned = [str(cell).replace("\n", " ").strip() if cell is not None else "" for cell in row]
+        if not any(row_cleaned):
+            continue
+        if i == 0:
+            headers = row_cleaned
+        md += "| " + " | ".join(row_cleaned) + " |\n"
+        if i == 0:
+            md += "| " + " | ".join(["---"] * len(row_cleaned)) + " |\n"
+    
+    # 2. Gerar Texto Corrido (Verbalização para melhor embedding)
+    verbalized = ""
+    if len(data) > 1 and headers:
+        verbalized = "\nDescrição da tabela:\n"
+        verbalized += f"Esta tabela contém informações sobre: {', '.join([h for h in headers if h])}.\n"
+        for i, row in enumerate(data[1:], start=1):
+            row_parts = []
+            for j, cell in enumerate(row):
+                if j < len(headers) and headers[j]:
+                    val = str(cell).strip() if cell else "não informado"
+                    row_parts.append(f"{headers[j]} é '{val}'")
+            if row_parts:
+                verbalized += f"- Registro {i}: {', '.join(row_parts)}.\n"
+    
+    return md + verbalized + "\n"
+
+
 def _extract_from_pdf_url(url: str):
     observacoes = []
     try:
@@ -62,13 +98,62 @@ def _extract_from_pdf_url(url: str):
         pdf = fitz.open(stream=content, filetype="pdf")
     except Exception as e:
         return "", 0, "PDF_TEXTUAL", [f"Erro ao abrir PDF: {e}"]
+    
     texts = []
     lengths = []
+    
     for page in pdf:
-        text = page.get_text("text") or ""
-        texts.append(text)
-        lengths.append(len(text.strip()))
+        # Tenta encontrar tabelas na página
+        try:
+            tabs = page.find_tables()
+            tables = tabs.tables
+        except Exception:
+            tables = []
+            
+        # 1. Identificar bboxes das tabelas
+        table_bboxes = [t.bbox for t in tables]
+        
+        # 2. Obter blocos de texto
+        blocks = page.get_text("blocks")
+        # bloco: (x0, y0, x1, y1, "texto", block_no, block_type)
+        
+        page_elements = []
+        
+        # Adiciona blocos de texto que NÃO estão dentro de tabelas
+        for b in blocks:
+            if b[6] == 0: # tipo texto
+                block_rect = fitz.Rect(b[:4])
+                is_inside_table = False
+                for t_bbox in table_bboxes:
+                    # Se o bloco está majoritariamente dentro da tabela, ignoramos
+                    if block_rect.intersect(t_bbox).get_area() > (block_rect.get_area() * 0.5):
+                        is_inside_table = True
+                        break
+                if not is_inside_table:
+                    # Normalização leve do bloco de texto
+                    content = b[4].strip()
+                    if content:
+                        # Substitui quebras de linha internas por espaços para manter o parágrafo
+                        content = re.sub(r"\s+", " ", content)
+                        page_elements.append({"type": "text", "y": b[1], "content": content})
+        
+        # Adiciona as tabelas formatadas (já estão em MD + verbalizado)
+        for t in tables:
+            md_table = _format_table_as_markdown(t)
+            if md_table.strip():
+                page_elements.append({"type": "table", "y": t.bbox[1], "content": md_table})
+        
+        # Ordena tudo pelo eixo Y (vertical) para manter a ordem de leitura
+        page_elements.sort(key=lambda x: x["y"])
+        
+        page_text = "\n\n".join([el["content"] for el in page_elements])
+        texts.append(page_text)
+        lengths.append(len(page_text.strip()))
+
     raw_text = "\n\n".join(texts)
+    # Atribuímos diretamente ao texto final, pois a limpeza já foi feita por bloco
+    texto = raw_text
+    
     num_pages = len(pdf)
     pages_with_text = sum(1 for length in lengths if length >= 20)
     if num_pages == 0:
@@ -81,7 +166,6 @@ def _extract_from_pdf_url(url: str):
         else:
             tipo_extracao = "PDF_OCR"
             observacoes.append("PDF provavelmente escaneado. OCR nao aplicado ou incompleto.")
-    texto = _normalize_text(raw_text)
     
     # Validação obrigatória de conteúdo extraído
     if not texto or len(texto.strip()) < 100:
