@@ -69,14 +69,28 @@ def _analise_basica_url(url: str) -> dict:
         return resultado
 
     if parsed.scheme == "file":
-        filepath = parsed.path
-        # Em Windows, o path pode vir como /C:/... ou /c:/...
-        if filepath.startswith('/') and filepath[2] == ':':
-            filepath = filepath[1:]
+        # Extração robusta do caminho do arquivo local
+        if parsed.netloc and os.name == 'nt' and parsed.netloc.endswith(':'):
+            # Formato file://C:/path... -> netloc='C:', path='/path...'
+            filepath = parsed.netloc + parsed.path
+        elif parsed.path.startswith('/') and len(parsed.path) > 2 and parsed.path[2] == ':':
+            # Formato file:///C:/path... -> path='/C:/path...'
+            filepath = parsed.path[1:]
+        else:
+            # Linux ou caminhos relativos
+            filepath = parsed.path if parsed.path else parsed.netloc
+
+        # Normaliza o separador de caminho para o SO atual
+        filepath = os.path.normpath(filepath)
             
         if not os.path.exists(filepath):
             resultado["status"] = "erro"
             resultado["observacoes"] = f"Arquivo local não encontrado: {filepath}"
+            return resultado
+        
+        if not os.access(filepath, os.R_OK):
+            resultado["status"] = "erro"
+            resultado["observacoes"] = f"Sem permissão de leitura para o arquivo: {filepath}"
             return resultado
         
         ext = filepath.lower()

@@ -204,19 +204,27 @@ def _extract_from_docx(content: bytes):
 
 
 def _extract_from_txt(content: bytes):
-    """Extrai texto de um arquivo .txt."""
+    """Extrai texto de um arquivo .txt com detecção de encoding."""
+    if not content:
+        return "", 0, "TXT_TEXTUAL", ["Arquivo TXT vazio."]
+        
     try:
-        # Tenta decodificar como utf-8, fallback para latin-1
+        import charset_normalizer
+        results = charset_normalizer.from_bytes(content)
+        texto = results.best().string
+    except (ImportError, Exception):
+        # Fallback se charset-normalizer não estiver disponível ou falhar
         try:
             texto = content.decode("utf-8")
         except UnicodeDecodeError:
             texto = content.decode("latin-1")
             
-        texto = _normalize_text(texto)
-        paginas = max(1, int(len(texto) / 1800))
-        return texto, paginas, "TXT_TEXTUAL", []
-    except Exception as e:
-        return "", 0, "TXT_TEXTUAL", [f"Erro ao extrair TXT: {e}"]
+    texto = _normalize_text(texto)
+    if not texto.strip():
+        return "", 0, "TXT_TEXTUAL", ["Conteúdo do TXT resultou em texto vazio após normalização."]
+        
+    paginas = max(1, int(len(texto) / 1800))
+    return texto, paginas, "TXT_TEXTUAL", []
 
 
 def _extract_from_html_url(url: str):
@@ -380,8 +388,21 @@ def extrair_conteudo(analise: dict):
     else:
         observacoes.append(f"tipo_conteudo invalido ou nao suportado: {tipo_conteudo_norm}")
         tipo_extracao_global = "HTML"
+    # Validação final: se não extraiu nada útil, marca como erro
+    total_texto = sum(len(d.get("texto", "").strip()) for d in documentos)
+    if not documentos or total_texto < 10:
+        return {
+            "fonte": fonte,
+            "status": "erro",
+            "tipo_extracao": tipo_extracao_global or "HTML",
+            "documentos": [],
+            "observacoes": f"Falha na extração: nenhum conteúdo textual útil encontrado. { ' '.join(observacoes).strip() }",
+            "proximo_agente": "NENHUM",
+        }
+
     return {
         "fonte": fonte,
+        "status": "sucesso",
         "tipo_extracao": tipo_extracao_global or "HTML",
         "documentos": documentos,
         "observacoes": " ".join(observacoes).strip(),

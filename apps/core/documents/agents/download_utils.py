@@ -43,14 +43,30 @@ def baixar_arquivo_resiliente(url: str) -> bytes:
     if url.startswith("file://"):
         from urllib.parse import urlparse
         parsed = urlparse(url)
-        # Em Windows, o path pode vir como /C:/... ou /c:/...
-        filepath = parsed.path
-        if filepath.startswith('/') and filepath[2] == ':':
-            filepath = filepath[1:]
+        
+        # Extração robusta do caminho do arquivo local
+        if parsed.netloc and os.name == 'nt' and parsed.netloc.endswith(':'):
+            # Formato file://C:/path... -> netloc='C:', path='/path...'
+            filepath = parsed.netloc + parsed.path
+        elif parsed.path.startswith('/') and len(parsed.path) > 2 and parsed.path[2] == ':':
+            # Formato file:///C:/path... -> path='/C:/path...'
+            filepath = parsed.path[1:]
+        else:
+            # Linux ou caminhos relativos
+            filepath = parsed.path if parsed.path else parsed.netloc
+
+        # Normaliza o separador de caminho para o SO atual
+        filepath = os.path.normpath(filepath)
         
         if os.path.exists(filepath):
-            with open(filepath, "rb") as f:
-                return f.read()
+            try:
+                with open(filepath, "rb") as f:
+                    content = f.read()
+                    if not content:
+                        logger.warning(f"[DOWNLOAD] Arquivo local vazio: {filepath}")
+                    return content
+            except Exception as e:
+                raise IOError(f"Erro ao ler arquivo local {filepath}: {e}")
         else:
             raise FileNotFoundError(f"Arquivo local não encontrado: {filepath}")
 

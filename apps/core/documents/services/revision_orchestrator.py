@@ -84,8 +84,9 @@ def executar_revisao_documento(doc_id):
             log_to_terminal_and_db(msg, "EXTRACTOR", "SKIP", doc_id=doc.id)
             return {"status": "sucesso", "acao": "MANTER", "mensagem": msg}
 
+        total_chars = sum(len(d.get("texto", "")) for d in resultado_extracao.get("documentos", []))
         log_to_terminal_and_db(
-            f"Conteúdo extraído: {len(resultado_extracao.get('conteudo', ''))} caracteres",
+            f"Conteúdo extraído: {total_chars} caracteres",
             "EXTRACTOR",
             "SUCCESS",
             doc_id=doc.id,
