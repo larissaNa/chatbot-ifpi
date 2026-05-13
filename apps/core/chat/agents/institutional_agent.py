@@ -25,16 +25,23 @@ def _get_vectorstore():
 
 
 def _score_to_relevance(score: float) -> float:
+    """
+    Converte o score do ChromaDB (Distância L2) para Relevância [0, 1].
+    No Chroma/L2, 0.0 é uma correspondência perfeita (distância zero).
+    Usamos uma função de decaimento inverso: 1 / (1 + d).
+    """
     try:
         s = float(score)
     except Exception:
         return 0.0
 
-    if 0.0 <= s <= 1.0:
-        return s
-    if s > 1.0:
-        return 1.0 / (1.0 + s)
-    return 0.0
+    # Se a distância for 0, relevância é 1.0. 
+    # Se a distância for 1.0, relevância é 0.5.
+    # Com threshold de 0.60, aceitamos distâncias de até ~0.66.
+    if s < 0:
+        return 0.0
+    
+    return 1.0 / (1.0 + s)
 
 
 def _extract_source(metadata: dict[str, Any]) -> dict[str, Any]:
@@ -160,6 +167,34 @@ def _format_context(docs: list[dict[str, Any]]) -> str:
     return "\n\n".join(blocks).strip()
 
 
+def _generate_search_query(question: str, context: str, profile: str) -> str:
+    """
+    Reescreve a pergunta do usuário para uma busca otimizada no banco vetorial,
+    incorporando elementos do contexto (quem é o usuário, curso, turma, etc).
+    """
+    if not context and not profile:
+        return question
+
+    llm = _get_llm()
+    # Prompt ultra-rápido para contextualizar a busca
+    prompt = ChatPromptTemplate.from_template("""
+    Com base no perfil do usuário e no histórico, transforme a última pergunta em uma consulta de busca otimizada para documentos oficiais. 
+    Substitua pronomes como "meu", "minha", "disso" pelos nomes reais citados anteriormente.
+    
+    Perfil: {profile}
+    Histórico: {context}
+    Pergunta: {question}
+    
+    Consulta de Busca (seja direto, use apenas termos-chave):""")
+    
+    try:
+        chain = prompt | llm | StrOutputParser()
+        rewritten = chain.invoke({"question": question, "context": context, "profile": profile}).strip()
+        return rewritten if rewritten else question
+    except Exception:
+        return question
+
+
 def _render_answer(answer: str, sources: list[dict[str, Any]]) -> str:
     a = (answer or "").strip()
     if not a:
@@ -189,7 +224,13 @@ def consulta_institucional(
     conversation_context: str = "",
     user_profile: str = "",
 ) -> dict[str, Any]:
-    retrieval = retrieve_with_threshold(question, k=k, score_threshold=score_threshold)
+    # NOVO: Contextualiza a busca antes de ir ao banco vetorial
+    search_query = _generate_search_query(question, conversation_context, user_profile)
+    
+    # Agora o retrieval usa a query expandida (ex: "horários aula ADS V módulo") 
+    # em vez de "horários para minha turma"
+    retrieval = retrieve_with_threshold(search_query, k=k, score_threshold=score_threshold)
+    
     if retrieval.get("status") != "success":
         rendered = f"Resposta:\n{NOT_FOUND_ANSWER}"
         return {
@@ -282,6 +323,10 @@ def melhorar_resposta_com_feedback(
 
 consulta_tool = Tool(
     name="consulta_institucional",
-    func=lambda q: consulta_institucional(q),
-    description="FONTE DE VERDADE. Responde perguntas baseadas nos documentos oficiais do IFPI, com threshold e fontes.",
+    func=lambda q, **kwargs: consulta_institucional(
+        q, 
+        conversation_context=kwargs.get("conversation_context", ""),
+        user_profile=kwargs.get("user_profile", "")
+    ),
+    description="FONTE DE VERDADE. Consulta normas e documentos do IFPI. Use esta ferramenta para qualquer dúvida institucional. Ela entende referências ao histórico da conversa.",
 )

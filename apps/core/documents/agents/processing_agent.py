@@ -30,10 +30,10 @@ def _calculate_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def _split_semantic_chunks(text: str, chunk_size: int = 2000, chunk_overlap: int = 200) -> list:
+def _split_semantic_chunks(text: str, chunk_size: int = 500, chunk_overlap: int = 100) -> list:
     """
     Divide o texto em chunks semanticos respeitando estrutura normativa.
-    chunk_size ~2000 caracteres aprox. 500 tokens (media 4 chars/token)
+    chunk_size ~500 caracteres aprox. 125 tokens (ideal para MiniLM-L12-v2 que tem limite de 128)
     """
     if not text:
         return []
