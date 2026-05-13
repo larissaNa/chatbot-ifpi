@@ -65,8 +65,8 @@ def _extract_source(metadata: dict[str, Any]) -> dict[str, Any]:
 def retrieve_with_threshold(
     question: str,
     *,
-    k: int = 6,
-    score_threshold: float = 0.60,
+    k: int = 12,
+    score_threshold: float = 0.40,
 ) -> dict[str, Any]:
     q = (question or "").strip()
     if not q:
@@ -108,7 +108,12 @@ def retrieve_with_threshold(
 
     docs_with_scores = list(seen_map.values())
 
-    filtered = [(doc, score) for doc, score in docs_with_scores if score >= float(score_threshold)]
+    # Ordena por relevância e filtra com um threshold mais permissivo (0.40)
+    # Isso garante que partes complementares do documento (como o final de uma lista) 
+    # não sejam descartadas.
+    docs_with_scores.sort(key=lambda item: item[1], reverse=True)
+    filtered = [item for item in docs_with_scores if item[1] >= float(score_threshold)][:k]
+
     filtered.sort(key=lambda item: item[1], reverse=True)
 
     if not filtered and docs_with_scores:
@@ -178,14 +183,17 @@ def _generate_search_query(question: str, context: str, profile: str) -> str:
     llm = _get_llm()
     # Prompt ultra-rápido para contextualizar a busca
     prompt = ChatPromptTemplate.from_template("""
-    Com base no perfil do usuário e no histórico, transforme a última pergunta em uma consulta de busca otimizada para documentos oficiais. 
-    Substitua pronomes como "meu", "minha", "disso" pelos nomes reais citados anteriormente.
+    Dada a conversa abaixo, gere uma consulta de busca otimizada para encontrar a resposta completa nos documentos.
+    
+    REGRAS:
+    1. Substitua termos vagos ("minha turma", "horário de hoje") por termos específicos (ex: "ADS V Módulo").
+    2. Se a pergunta pedir informações de um conjunto (ex: "horários", "prazos", "regras"), use termos que ajudem a recuperar o documento inteiro.
     
     Perfil: {profile}
     Histórico: {context}
     Pergunta: {question}
     
-    Consulta de Busca (seja direto, use apenas termos-chave):""")
+    Consulta de Busca:""")
     
     try:
         chain = prompt | llm | StrOutputParser()
