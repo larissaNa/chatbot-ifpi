@@ -62,6 +62,80 @@ def _extract_source(metadata: dict[str, Any]) -> dict[str, Any]:
     return {"title": str(title), "url": str(url), "page": page}
 
 
+def _expand_with_sibling_chunks(
+    filtered: list[tuple[Any, float]],
+    vectorstore: Any,
+    already_seen: dict[str, tuple[Any, float]],
+    max_docs_to_expand: int = 3,
+) -> list[tuple[Any, float]]:
+    """
+    Para os top `max_docs_to_expand` documentos únicos já recuperados,
+    busca todos os chunks restantes do mesmo documento (por id_crenca)
+    e adiciona os que ainda não estão na lista, com relevância ligeiramente
+    abaixo do mínimo já encontrado para manter a ordem semântica.
+    """
+    if not filtered:
+        return filtered
+
+    seen_chunk_ids: set[str] = set()
+    for doc, _ in filtered:
+        meta = getattr(doc, "metadata", {}) or {}
+        seen_chunk_ids.add(str(meta.get("chunk_id", "") or id(doc)))
+
+    # Identifica os documentos únicos por id_crenca, em ordem de relevância
+    unique_docs_ordered: list[str] = []
+    seen_crencas: set[str] = set()
+    for doc, _ in filtered:
+        meta = getattr(doc, "metadata", {}) or {}
+        crenca = str(meta.get("id_crenca", ""))
+        if crenca and crenca not in seen_crencas:
+            seen_crencas.add(crenca)
+            unique_docs_ordered.append(crenca)
+        if len(unique_docs_ordered) >= max_docs_to_expand:
+            break
+
+    if not unique_docs_ordered:
+        return filtered
+
+    min_relevance = min(rel for _, rel in filtered)
+    extra: list[tuple[Any, float]] = []
+
+    collection = getattr(vectorstore, "_collection", None)
+    if collection is None:
+        return filtered
+
+    for i, id_crenca in enumerate(unique_docs_ordered):
+        try:
+            result = collection.get(
+                where={"id_crenca": {"$eq": id_crenca}},
+                include=["documents", "metadatas"],
+            )
+            sibling_docs = result.get("documents") or []
+            sibling_metas = result.get("metadatas") or []
+
+            for doc_text, meta in zip(sibling_docs, sibling_metas):
+                chunk_id = str(meta.get("chunk_id", "") or hash(doc_text))
+                if chunk_id in seen_chunk_ids:
+                    continue
+                seen_chunk_ids.add(chunk_id)
+
+                from langchain_core.documents import Document
+                sibling_doc = Document(page_content=doc_text, metadata=meta)
+                # Relevância decrescente por ordem de chunk para manter sequência
+                ordem = int(meta.get("ordem_no_documento", 99))
+                relevance = max(0.0, min_relevance - 0.001 * (i + 1) - 0.0001 * ordem)
+                extra.append((sibling_doc, relevance))
+        except Exception as e:
+            print(f"[RAG][EXPAND] Erro ao buscar siblings de {id_crenca}: {e}")
+
+    if extra:
+        print(f"[RAG][EXPAND] {len(extra)} chunks adicionais de {len(unique_docs_ordered)} documentos expandidos.")
+
+    combined = filtered + extra
+    combined.sort(key=lambda x: x[1], reverse=True)
+    return combined
+
+
 def retrieve_with_threshold(
     question: str,
     *,
@@ -125,6 +199,10 @@ def retrieve_with_threshold(
         filtered = sorted(docs_with_scores, key=lambda item: item[1], reverse=True)[:k]
     else:
         print(f"[RAG][FILTER] {len(filtered)} chunks acima do threshold {score_threshold}.")
+
+    # Expansão de documento: para cada documento único nos resultados, busca
+    # todos os chunks restantes desse documento para garantir cobertura completa.
+    filtered = _expand_with_sibling_chunks(filtered, vectorstore, seen_map)
 
     docs_out: list[dict[str, Any]] = []
     sources_out: list[dict[str, Any]] = []
@@ -236,8 +314,8 @@ def _render_answer(answer: str, sources: list[dict[str, Any]]) -> str:
 def consulta_institucional(
     question: str,
     *,
-    k: int = 12,
-    score_threshold: float = 0.50,
+    k: int = 20,
+    score_threshold: float = 0.40,
     conversation_context: str = "",
     user_profile: str = "",
 ) -> dict[str, Any]:
