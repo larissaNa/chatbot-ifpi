@@ -75,15 +75,16 @@ def retrieve_with_threshold(
     docs_with_scores: list[tuple[Any, float]] = []
     vectorstore = _get_vectorstore()
     if vectorstore is None:
+        print("[RAG][ERROR] Vectorstore não disponível.")
         return {"status": "not_found", "docs": [], "sources": []}
 
     pairs1: list[tuple[Any, float]] = []
     if hasattr(vectorstore, "similarity_search_with_relevance_scores"):
         try:
-            # Substituído por similarity_search_with_score para evitar erro de intervalo [0,1]
-            # O modelo paraphrase-multilingual retorna scores em outro intervalo.
             pairs1 = vectorstore.similarity_search_with_score(q, k=k)
-        except Exception:
+            print(f"[RAG][SEARCH] query='{q[:80]}' k={k} → {len(pairs1)} resultados brutos")
+        except Exception as e:
+            print(f"[RAG][ERROR] similarity_search_with_score falhou: {e}")
             pairs1 = []
 
     pairs2: list[tuple[Any, float]] = []
@@ -108,16 +109,22 @@ def retrieve_with_threshold(
 
     docs_with_scores = list(seen_map.values())
 
-    # Ordena por relevância e filtra com um threshold mais permissivo (0.40)
-    # Isso garante que partes complementares do documento (como o final de uma lista) 
-    # não sejam descartadas.
     docs_with_scores.sort(key=lambda item: item[1], reverse=True)
+
+    # Log dos scores brutos para diagnóstico
+    for rank_i, (doc_i, rel_i) in enumerate(docs_with_scores[:k], start=1):
+        meta_i = getattr(doc_i, "metadata", {}) or {}
+        titulo_i = meta_i.get("titulo") or meta_i.get("documento_titulo") or "?"
+        ordem_i = meta_i.get("ordem_no_documento", "?")
+        print(f"[RAG][SCORE] #{rank_i} rel={rel_i:.4f} doc='{titulo_i}' chunk={ordem_i}")
+
     filtered = [item for item in docs_with_scores if item[1] >= float(score_threshold)][:k]
 
-    filtered.sort(key=lambda item: item[1], reverse=True)
-
     if not filtered and docs_with_scores:
+        print(f"[RAG][FALLBACK] Nenhum chunk acima do threshold {score_threshold}. Usando top-{k} sem filtro.")
         filtered = sorted(docs_with_scores, key=lambda item: item[1], reverse=True)[:k]
+    else:
+        print(f"[RAG][FILTER] {len(filtered)} chunks acima do threshold {score_threshold}.")
 
     docs_out: list[dict[str, Any]] = []
     sources_out: list[dict[str, Any]] = []
@@ -198,8 +205,10 @@ def _generate_search_query(question: str, context: str, profile: str) -> str:
     try:
         chain = prompt | llm | StrOutputParser()
         rewritten = chain.invoke({"question": question, "context": context, "profile": profile}).strip()
+        print(f"[RAG][QUERY_REWRITE] original='{question[:80]}' → reescrita='{rewritten[:80]}'")
         return rewritten if rewritten else question
-    except Exception:
+    except Exception as e:
+        print(f"[RAG][QUERY_REWRITE] Falha ao reescrever query: {e}")
         return question
 
 

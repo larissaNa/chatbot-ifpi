@@ -106,13 +106,15 @@ def processar_conteudo(extracao: dict) -> dict:
         chunks_texto = _split_semantic_chunks(texto)
 
         for i, chunk_text in enumerate(chunks_texto):
-            # Prefixa o título no texto do chunk para que buscas pelo nome do
-            # documento encontrem todos os chunks, não apenas o primeiro.
-            chunk_text_for_embedding = f"{titulo}\n{chunk_text}" if titulo and titulo not in chunk_text else chunk_text
-            embedding = _generate_embedding(chunk_text_for_embedding)
+            # page_content inclui o título como cabeçalho para que cada chunk
+            # seja semanticamente autocontido — o embedding e o texto enviado
+            # ao LLM usam o mesmo string, evitando divergência query/documento.
+            has_title = titulo and titulo not in chunk_text
+            page_content = f"[{titulo}]\n{chunk_text}" if has_title else chunk_text
+            embedding = _generate_embedding(page_content)
 
             chunk_id = str(uuid.uuid4())
-            content_hash = _calculate_hash(chunk_text)
+            content_hash = _calculate_hash(page_content)
 
             metadata_chunk = {
                 "chunk_id": chunk_id,
@@ -124,13 +126,13 @@ def processar_conteudo(extracao: dict) -> dict:
                 "total_chunks_doc": len(chunks_texto),
                 "data_processamento": datetime.now().isoformat(),
                 "hash_conteudo": content_hash,
-                "tamanho_tokens_estimado": len(chunk_text) // 4,
+                "tamanho_tokens_estimado": len(page_content) // 4,
             }
             metadata_chunk.update(metadata_original)
 
             chunks_coletados.append(
                 {
-                    "page_content": chunk_text,
+                    "page_content": page_content,
                     "metadata": metadata_chunk,
                     "embedding": embedding,
                 }
