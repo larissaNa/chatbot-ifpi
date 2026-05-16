@@ -132,7 +132,7 @@ def _expand_with_sibling_chunks(
             print(f"[RAG][EXPAND] Erro ao buscar siblings de {id_crenca}: {e}")
 
     if extra:
-        print(f"[RAG][EXPAND] {len(extra)} chunks adicionais de {len(unique_docs_ordered)} documentos expandidos.")
+        print(f"[RAG][EXPAND] {len(extra)} chunks adicionais de {len(expandable)} documentos expandidos.")
 
     combined = filtered + extra
     combined.sort(key=lambda x: x[1], reverse=True)
