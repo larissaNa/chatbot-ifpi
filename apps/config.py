@@ -20,7 +20,8 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     CHAT_HISTORY_LIMIT = int(os.getenv("CHAT_HISTORY_LIMIT", "12"))
     UPLOAD_FOLDER = os.path.join(basedir, "uploads")
-    ALLOWED_EXTENSIONS = {"pdf"}
+    ALLOWED_EXTENSIONS = {"pdf", "txt", "docx"}
+    MAX_CONTENT_LENGTH = int(os.getenv("MAX_UPLOAD_MB", "150")) * 1024 * 1024
 
     DB_ENGINE   = os.getenv('DB_ENGINE'   , None)
     DB_USERNAME = os.getenv('DB_USERNAME' , None)
