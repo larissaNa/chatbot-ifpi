@@ -66,13 +66,13 @@ def _expand_with_sibling_chunks(
     filtered: list[tuple[Any, float]],
     vectorstore: Any,
     already_seen: dict[str, tuple[Any, float]],
-    max_docs_to_expand: int = 3,
+    max_doc_chunks: int = 30,
 ) -> list[tuple[Any, float]]:
     """
-    Para os top `max_docs_to_expand` documentos únicos já recuperados,
-    busca todos os chunks restantes do mesmo documento (por id_crenca)
-    e adiciona os que ainda não estão na lista, com relevância ligeiramente
-    abaixo do mínimo já encontrado para manter a ordem semântica.
+    Para cada documento pequeno (total_chunks_doc <= max_doc_chunks) encontrado
+    no top-k, busca todos os chunks restantes do mesmo documento.
+    Documentos grandes (manuais, regulamentos extensos) não são expandidos para
+    evitar inundar o contexto do LLM com conteúdo irrelevante.
     """
     if not filtered:
         return filtered
@@ -82,19 +82,23 @@ def _expand_with_sibling_chunks(
         meta = getattr(doc, "metadata", {}) or {}
         seen_chunk_ids.add(str(meta.get("chunk_id", "") or id(doc)))
 
-    # Identifica os documentos únicos por id_crenca, em ordem de relevância
-    unique_docs_ordered: list[str] = []
+    # Coleta todos os documentos únicos no top-k que sejam "pequenos"
+    expandable: dict[str, int] = {}  # id_crenca → posição em que apareceu
     seen_crencas: set[str] = set()
-    for doc, _ in filtered:
+    for rank_pos, (doc, _) in enumerate(filtered):
         meta = getattr(doc, "metadata", {}) or {}
         crenca = str(meta.get("id_crenca", ""))
-        if crenca and crenca not in seen_crencas:
-            seen_crencas.add(crenca)
-            unique_docs_ordered.append(crenca)
-        if len(unique_docs_ordered) >= max_docs_to_expand:
-            break
+        if not crenca or crenca in seen_crencas:
+            continue
+        seen_crencas.add(crenca)
+        total = int(meta.get("total_chunks_doc", 999))
+        if total <= max_doc_chunks:
+            expandable[crenca] = rank_pos
+            print(f"[RAG][EXPAND] Documento elegível para expansão: '{meta.get('titulo', crenca)}' ({total} chunks)")
+        else:
+            print(f"[RAG][EXPAND] Documento grande ignorado: '{meta.get('titulo', crenca)}' ({total} chunks > {max_doc_chunks})")
 
-    if not unique_docs_ordered:
+    if not expandable:
         return filtered
 
     min_relevance = min(rel for _, rel in filtered)
@@ -104,7 +108,7 @@ def _expand_with_sibling_chunks(
     if collection is None:
         return filtered
 
-    for i, id_crenca in enumerate(unique_docs_ordered):
+    for i, (id_crenca, rank_pos) in enumerate(sorted(expandable.items(), key=lambda x: x[1])):
         try:
             result = collection.get(
                 where={"id_crenca": {"$eq": id_crenca}},
@@ -121,7 +125,6 @@ def _expand_with_sibling_chunks(
 
                 from langchain_core.documents import Document
                 sibling_doc = Document(page_content=doc_text, metadata=meta)
-                # Relevância decrescente por ordem de chunk para manter sequência
                 ordem = int(meta.get("ordem_no_documento", 99))
                 relevance = max(0.0, min_relevance - 0.001 * (i + 1) - 0.0001 * ordem)
                 extra.append((sibling_doc, relevance))
