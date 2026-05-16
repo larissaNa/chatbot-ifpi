@@ -237,7 +237,7 @@ def consulta_institucional(
     question: str,
     *,
     k: int = 12,
-    score_threshold: float = 0.35,
+    score_threshold: float = 0.50,
     conversation_context: str = "",
     user_profile: str = "",
 ) -> dict[str, Any]:

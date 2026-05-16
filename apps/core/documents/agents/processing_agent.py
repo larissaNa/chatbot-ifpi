@@ -13,8 +13,12 @@ _embedding_model = None
 def _get_embedding_model():
     global _embedding_model
     if _embedding_model is None:
+        # normalize_embeddings=True é obrigatório para o modelo paraphrase-multilingual-MiniLM-L12-v2.
+        # Sem normalização, os vetores têm norma L2 ~10-14, fazendo a distância L2 ser dominada
+        # pela magnitude (não pela direção semântica), tornando todos os scores igualmente baixos.
         _embedding_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            encode_kwargs={"normalize_embeddings": True},
         )
     return _embedding_model
 
