@@ -30,7 +30,7 @@ def _calculate_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def _split_semantic_chunks(text: str, chunk_size: int = 500, chunk_overlap: int = 150) -> list:
+def _split_semantic_chunks(text: str, chunk_size: int = 800, chunk_overlap: int = 150) -> list:
     """
     Divide o texto em chunks semanticos respeitando estrutura normativa.
     Aumentamos o overlap para 150 para garantir que o contexto de tabelas/listas não se perca entre chunks.
@@ -106,7 +106,10 @@ def processar_conteudo(extracao: dict) -> dict:
         chunks_texto = _split_semantic_chunks(texto)
 
         for i, chunk_text in enumerate(chunks_texto):
-            embedding = _generate_embedding(chunk_text)
+            # Prefixa o título no texto do chunk para que buscas pelo nome do
+            # documento encontrem todos os chunks, não apenas o primeiro.
+            chunk_text_for_embedding = f"{titulo}\n{chunk_text}" if titulo and titulo not in chunk_text else chunk_text
+            embedding = _generate_embedding(chunk_text_for_embedding)
 
             chunk_id = str(uuid.uuid4())
             content_hash = _calculate_hash(chunk_text)
