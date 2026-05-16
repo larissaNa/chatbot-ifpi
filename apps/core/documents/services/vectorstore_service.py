@@ -10,8 +10,10 @@ def setup_vectorstore():
     project_root = os.path.abspath(os.path.join(base_dir, "..", "..", "..", ".."))
     persist_path = os.path.join(project_root, "chroma_db")
 
+    # normalize_embeddings=True deve corresponder ao que foi usado na indexação.
     embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        encode_kwargs={"normalize_embeddings": True},
     )
 
     vectorstore = Chroma(
