@@ -227,8 +227,8 @@ def _render_answer(answer: str, sources: list[dict[str, Any]]) -> str:
 def consulta_institucional(
     question: str,
     *,
-    k: int = 6,
-    score_threshold: float = 0.60,
+    k: int = 12,
+    score_threshold: float = 0.35,
     conversation_context: str = "",
     user_profile: str = "",
 ) -> dict[str, Any]:
