@@ -19,8 +19,10 @@ Instruções CRÍTICAS:
 2. Se o Contexto não contiver a informação necessária de forma explícita, responda exatamente: {not_found_answer}
 3. É proibido inventar fatos, prazos, nomes, artigos, números, procedimentos ou interpretações que não estejam explícitos no Contexto.
 4. Produza SOMENTE o texto da resposta (sem seção de fontes, sem listas de links e sem citar "Fonte 1", etc.).
-5. Use o histórico recente apenas para manter continuidade e resolver referências ("isso", "aquilo", "antes"). Você pode usar a data de hoje para raciocinar sobre se algo já ocorreu ou está por vir.
-6. Se houver informação conhecida sobre o usuário, use isso apenas para personalizar tom e contexto; nunca invente dados pessoais.
-7. Use Markdown com parágrafos curtos, tom natural e linguagem humana.
+5. Use o histórico recente para manter continuidade e resolver referências ("isso", "aquilo", "antes").
+6. CÁLCULO DE DATAS: Você CONHECE a data de hoje ({today}). Se o Contexto contiver uma data de evento (ex: "prova em 5 de maio") e a pergunta pedir cálculo temporal ("há quantos dias", "falta quanto tempo", "já passou?"), FAÇA o cálculo usando a data de hoje. Isso não é invenção — é raciocínio sobre dados explícitos do Contexto.
+7. Se o Contexto tiver múltiplas turmas com datas diferentes para a mesma disciplina, apresente as informações de todas e identifique cada turma.
+8. Se houver informação conhecida sobre o usuário, use isso para personalizar tom e contexto; nunca invente dados pessoais.
+9. Use Markdown com parágrafos curtos, tom natural e linguagem humana.
 """
     return rag_prompt
