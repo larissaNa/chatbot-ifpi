@@ -120,7 +120,7 @@ class TestChatbotRoutes(unittest.TestCase):
         bot_payload = next(item for item in messages if item["sender"] == "bot")
         self.assertEqual(bot_payload["feedback_rating"], "up")
 
-    def test_feedback_down_gera_resposta_revisada(self):
+    def test_feedback_down_salva_comentario_e_historico(self):
         with self.app.app_context():
             user_message = ChatMessage(
                 user_id=None,
@@ -139,31 +139,35 @@ class TestChatbotRoutes(unittest.TestCase):
             db.session.commit()
             bot_id = bot_message.id
 
-        with patch("apps.core.melhorar_resposta_com_feedback") as mock_improve:
-            mock_improve.return_value = {
-                "answer": "O Regimento Interno organiza o funcionamento institucional e define regras de atuação.",
-                "sources": [],
-                "docs": [],
-                "has_rag_context": True,
-                "status": "success",
-            }
-            feedback_response = self.client.post(
-                "/chatbot/feedback",
-                json={"bot_message_id": bot_id, "rating": "down"},
-            )
+        feedback_response = self.client.post(
+            "/chatbot/feedback",
+            json={
+                "bot_message_id": bot_id,
+                "rating": "down",
+                "user_comment": "A resposta estava errada, o regimento tem essa informação.",
+            },
+        )
 
         self.assertEqual(feedback_response.status_code, 200)
         payload = feedback_response.get_json()
-        self.assertIn("revised_response", payload)
-        self.assertIn("Resposta revisada", payload["revised_response"])
+        self.assertIn("ok", payload)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["rating"], "down")
+        # Não deve mais gerar resposta revisada automaticamente
+        self.assertNotIn("revised_response", payload)
 
+        import json as _json
         with self.app.app_context():
             saved_feedback = ChatFeedback.query.filter_by(bot_message_id=bot_id).first()
             self.assertIsNotNone(saved_feedback)
             self.assertEqual(saved_feedback.rating, "down")
-            self.assertIn("Resposta revisada", saved_feedback.comment or "")
-            revised_messages = ChatMessage.query.filter_by(thread_id=self.thread_id, sender="bot").all()
-            self.assertEqual(len(revised_messages), 2)
+            # comment deve ser JSON com user_comment e conversation_history
+            comment_data = _json.loads(saved_feedback.comment or "{}")
+            self.assertIn("A resposta estava errada", comment_data.get("user_comment", ""))
+            self.assertIn("conversation_history", comment_data)
+            # Não deve ter criado mensagem bot revisada
+            bot_messages = ChatMessage.query.filter_by(thread_id=self.thread_id, sender="bot").all()
+            self.assertEqual(len(bot_messages), 1)
 
     def test_admin_feedbacks_lista_respostas_negativas(self):
         with self.app.app_context():

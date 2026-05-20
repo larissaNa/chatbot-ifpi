@@ -5,6 +5,7 @@ Rotas administrativas relacionadas a documentos, versoes, logs e feedbacks.
 
 import re
 import os
+import json
 import uuid
 from werkzeug.utils import secure_filename
 from flask import flash, redirect, render_template, request, url_for, current_app
@@ -28,32 +29,59 @@ def _normalize_feedback_text(value: str) -> str:
     return re.sub(r"\s+", " ", (value or "").strip().lower())
 
 
+def _parse_feedback_comment(feedback: ChatFeedback) -> dict:
+    """Extrai user_comment e conversation_history do campo comment (JSON)."""
+    raw = (feedback.comment or "").strip()
+    if not raw:
+        return {"user_comment": "", "conversation_history": ""}
+    try:
+        data = json.loads(raw)
+        return {
+            "user_comment": str(data.get("user_comment") or ""),
+            "conversation_history": str(data.get("conversation_history") or ""),
+        }
+    except Exception:
+        # Formato legado (texto puro da resposta revisada)
+        return {"user_comment": "", "conversation_history": raw}
+
+
 def _classify_feedback_failure(feedback: ChatFeedback) -> str:
     answer = _normalize_feedback_text(feedback.answer)
     thoughts = _normalize_feedback_text(getattr(getattr(feedback, "bot_message", None), "thoughts", ""))
+    parsed = _parse_feedback_comment(feedback)
+    user_comment = _normalize_feedback_text(parsed["user_comment"])
 
     if not answer:
         return "Resposta vazia"
-    if "não encontrei" in answer or "não localizei" in answer or "rag_status" in thoughts and "not_found" in thoughts:
+    if user_comment:
+        # Classifica pela palavra-chave no comentário do usuário
+        if any(w in user_comment for w in ("errado", "incorreto", "errada", "incorreta", "errou")):
+            return "Informação incorreta"
+        if any(w in user_comment for w in ("não encontrou", "não achou", "não encontrei", "não localizou")):
+            return "RAG sem contexto suficiente"
+        if any(w in user_comment for w in ("incompleto", "faltou", "faltando", "incompleta")):
+            return "Resposta incompleta"
+    if "não encontrei" in answer or "não localizei" in answer:
         return "RAG sem contexto suficiente"
     if "tavily_web" in thoughts or '"route": "tavily_web"' in thoughts:
         return "Fallback para web"
     if len(answer) < 140:
         return "Resposta curta ou genérica"
-    return "Necessita reformulação"
+    return "Necessita investigação"
 
 
 def _feedback_dashboard_data(feedbacks: list[ChatFeedback]) -> dict:
     failure_counts: dict[str, int] = {}
     repeated_questions: dict[str, dict[str, int | str]] = {}
-    revised_count = 0
+    with_comment_count = 0
 
     for feedback in feedbacks:
         label = _classify_feedback_failure(feedback)
         failure_counts[label] = failure_counts.get(label, 0) + 1
 
-        if (feedback.comment or "").strip():
-            revised_count += 1
+        parsed = _parse_feedback_comment(feedback)
+        if parsed["user_comment"].strip():
+            with_comment_count += 1
 
         normalized_question = _normalize_feedback_text(feedback.question)
         if normalized_question:
@@ -78,7 +106,7 @@ def _feedback_dashboard_data(feedbacks: list[ChatFeedback]) -> dict:
 
     stats = {
         "total_down": len(feedbacks),
-        "revised_count": revised_count,
+        "with_comment_count": with_comment_count,
         "top_failure": recurrent_failures[0]["label"] if recurrent_failures else "Sem dados",
     }
     return {
@@ -200,6 +228,7 @@ def admin_feedbacks():
         recurrent_failures=dashboard["recurrent_failures"],
         recurring_questions=dashboard["recurring_questions"],
         classify_feedback_failure=_classify_feedback_failure,
+        parse_feedback_comment=_parse_feedback_comment,
     )
 
 

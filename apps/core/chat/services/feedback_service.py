@@ -1,3 +1,5 @@
+import json
+
 from flask_login import current_user
 
 from apps import db
@@ -7,7 +9,7 @@ from .memory_service import build_effective_user_profile
 from .serialization_service import format_conversation_context
 
 
-def submit_feedback(*, bot_message_id: int, rating: str, improve_response) -> tuple[dict, int]:
+def submit_feedback(*, bot_message_id: int, rating: str, user_comment: str = "") -> tuple[dict, int]:
     rating = str(rating or "").strip().lower()
     if rating not in {"up", "down"}:
         return {"error": "Avaliação inválida."}, 400
@@ -30,11 +32,30 @@ def submit_feedback(*, bot_message_id: int, rating: str, improve_response) -> tu
         .first()
     )
 
+    # Captura o histórico completo da thread para diagnóstico
+    conversation_history = ""
+    if rating == "down":
+        history_messages = get_recent_thread_messages(bot_message.thread_id, limit=chat_history_limit())
+        conversation_history = format_conversation_context(history_messages, limit=chat_history_limit())
+
+    # Monta o payload de diagnóstico salvo em comment (JSON)
+    comment_payload = None
+    if rating == "down":
+        comment_payload = json.dumps(
+            {
+                "user_comment": user_comment,
+                "conversation_history": conversation_history,
+            },
+            ensure_ascii=False,
+        )
+
     feedback = ChatFeedback.query.filter_by(bot_message_id=bot_message.id).first()
     if feedback:
         feedback.rating = rating
         feedback.question = user_message.content if user_message else ""
         feedback.answer = bot_message.content or ""
+        if comment_payload is not None:
+            feedback.comment = comment_payload
     else:
         feedback = ChatFeedback(
             user_id=current_user.id if current_user.is_authenticated else None,
@@ -44,48 +65,9 @@ def submit_feedback(*, bot_message_id: int, rating: str, improve_response) -> tu
             question=user_message.content if user_message else "",
             answer=bot_message.content or "",
             rating=rating,
+            comment=comment_payload,
         )
         db.session.add(feedback)
 
-    response_payload = {"ok": True, "bot_message_id": bot_message.id, "rating": rating}
-
-    if rating == "down":
-        history_messages = get_recent_thread_messages(bot_message.thread_id, limit=chat_history_limit())
-        user_id = current_user.id if current_user.is_authenticated else None
-        _, user_profile, _ = build_effective_user_profile(
-            user_id=user_id,
-            thread_id=bot_message.thread_id,
-            history_messages=history_messages,
-        )
-
-        improved = improve_response(
-            question=user_message.content if user_message else "",
-            previous_answer=bot_message.content or "",
-            conversation_context=format_conversation_context(history_messages, limit=chat_history_limit()),
-            user_profile=user_profile,
-        )
-        revised_text = (improved.get("answer") or "").strip()
-        if revised_text:
-            revised_content = f"**Resposta revisada**\n\n{revised_text}"
-            revised_message = ChatMessage(
-                user_id=user_id,
-                thread_id=bot_message.thread_id,
-                sender="bot",
-                content=revised_content,
-            )
-            db.session.add(revised_message)
-            feedback.comment = revised_content
-            db.session.commit()
-            response_payload.update(
-                {
-                    "revised_response": revised_content,
-                    "revised_bot_message_id": revised_message.id,
-                    "revised_feedback_rating": None,
-                    "revised_has_rag_context": bool(improved.get("has_rag_context")),
-                    "revised_sources": improved.get("sources") or [],
-                }
-            )
-            return response_payload, 200
-
     db.session.commit()
-    return response_payload, 200
+    return {"ok": True, "bot_message_id": bot_message.id, "rating": rating}, 200
