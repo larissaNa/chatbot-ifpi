@@ -8,6 +8,9 @@ const sidebarChatToggle = document.getElementById('sidebar-chat-toggle');
 const sidebarChatDropdown = document.getElementById('sidebar-chat-dropdown');
 const sidebarChatItem = document.querySelector('.sidebar-chat-item');
 
+// Em prod: sem histórico de conversas, sem raciocínio, sem sidebar
+const IS_PROD = (window.CHAT_MODE === 'prod');
+
 let activeThreadId = null;
 
 if (chatContainer && document.body) {
@@ -579,7 +582,8 @@ async function deleteConversation(threadId) {
 }
 
 function appendThoughtsDropdown(messageElement, thoughtsText) {
-  if (!thoughtsText) return;
+  // Em prod não exibe o raciocínio interno para usuários externos
+  if (IS_PROD || !thoughtsText) return;
 
   const dropdown = document.createElement('details');
   dropdown.className = 'thoughts-dropdown';
@@ -623,7 +627,9 @@ form.addEventListener('submit', async (e) => {
     if (data.thoughts) {
       appendThoughtsDropdown(finalMsg, data.thoughts);
     }
-    await refreshConversationList();
+    if (!IS_PROD) {
+      await refreshConversationList();
+    }
   } catch (error) {
     chatBox.removeChild(loadingMsg);
     createMessageBubble('bot', '❌ Erro ao se comunicar com o servidor.');
@@ -660,7 +666,13 @@ window.addEventListener('resize', syncNavbarHeightVar);
 document.addEventListener('DOMContentLoaded', async () => {
   syncNavbarHeightVar();
   setTimeout(syncNavbarHeightVar, 250);
-  await refreshConversationList();
-  await loadConversation();
-  setSidebarDropdownOpen(true);
+
+  if (IS_PROD) {
+    // Modo prod: começa sempre com chat limpo, sem carregar histórico ou sidebar
+    setInitialState(true);
+  } else {
+    await refreshConversationList();
+    await loadConversation();
+    setSidebarDropdownOpen(true);
+  }
 });
