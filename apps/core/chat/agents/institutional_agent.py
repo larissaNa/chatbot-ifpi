@@ -269,20 +269,22 @@ def _generate_search_query(question: str, context: str, profile: str) -> str:
         return question
 
     llm = _get_llm()
-    # Prompt ultra-rápido para contextualizar a busca
     prompt = ChatPromptTemplate.from_template("""
-    Dada a conversa abaixo, gere uma consulta de busca otimizada para encontrar a resposta completa nos documentos.
-    
-    REGRAS:
-    1. Substitua termos vagos ("minha turma", "horário de hoje") por termos específicos (ex: "ADS V Módulo").
-    2. Se a pergunta pedir informações de um conjunto (ex: "horários", "prazos", "regras"), use termos que ajudem a recuperar o documento inteiro.
-    
-    Perfil: {profile}
-    Histórico: {context}
-    Pergunta: {question}
-    
-    Consulta de Busca:""")
-    
+Dada a conversa abaixo, gere uma consulta de busca otimizada para encontrar a resposta nos documentos do IFPI.
+
+REGRAS:
+1. Substitua APENAS pronomes e referências vagas ("minha turma", "isso", "aquela prova", "esse professor") por termos concretos mencionados no histórico.
+2. Mantenha nomes de professores, disciplinas e cursos EXATAMENTE como estão na pergunta original — não troque por sinônimos.
+3. NÃO adicione curso/turma se a pergunta não os mencionar explicitamente. Adicionar informação não pedida estreita a busca e pode fazer o sistema perder o documento correto.
+4. Se a pergunta envolve provas ou avaliações, inclua os termos "avaliações bimestrais" ou "provas" na query.
+5. Se a pergunta não tiver referências vagas, retorne-a quase intacta, ajustando apenas termos técnicos óbvios.
+
+Perfil: {profile}
+Histórico: {context}
+Pergunta: {question}
+
+Consulta de Busca (responda SOMENTE com a query, sem explicações):""")
+
     try:
         chain = prompt | llm | StrOutputParser()
         rewritten = chain.invoke({"question": question, "context": context, "profile": profile}).strip()
@@ -358,6 +360,37 @@ def consulta_institucional(
 
     answer = (answer or "").strip()
     if answer == NOT_FOUND_ANSWER:
+        # Retry: a query reescrita pode ter sido específica demais e perdeu o documento correto.
+        # Tentamos novamente com a pergunta original (sem reescrita de contexto).
+        if search_query.strip().lower() != question.strip().lower():
+            print(f"[RAG][RETRY] LLM retornou NOT_FOUND após query reescrita. Tentando com pergunta original.")
+            retrieval2 = retrieve_with_threshold(question, k=k, score_threshold=score_threshold)
+            if retrieval2.get("status") == "success":
+                docs2 = retrieval2.get("docs") or []
+                sources2 = retrieval2.get("sources") or []
+                context2 = _format_context(docs2)
+                answer2 = chain.invoke(
+                    {
+                        "context": context2,
+                        "question": (question or "").strip(),
+                        "not_found_answer": NOT_FOUND_ANSWER,
+                        "conversation_context": (conversation_context or "").strip() or "Sem histórico relevante.",
+                        "user_profile": (user_profile or "").strip() or "Nenhuma informação adicional conhecida.",
+                        "today": today,
+                    }
+                )
+                answer2 = (answer2 or "").strip()
+                if answer2 and answer2 != NOT_FOUND_ANSWER:
+                    print(f"[RAG][RETRY] Retry bem-sucedido com query original.")
+                    return {
+                        "status": "success",
+                        "answer": answer2,
+                        "sources": sources2,
+                        "docs": docs2,
+                        "rendered": _render_answer(answer2, sources2),
+                    }
+                print(f"[RAG][RETRY] Retry também retornou NOT_FOUND.")
+
         rendered = f"Resposta:\n{NOT_FOUND_ANSWER}"
         return {
             "status": "not_found",
