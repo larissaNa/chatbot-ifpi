@@ -319,34 +319,92 @@ function setSidebarDropdownOpen(isOpen) {
   sidebarChatToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
 }
 
+// --- Feedback modal state ---
+let _feedbackModalTarget = null; // { botMessageId, messageElement }
+
+function openFeedbackModal(botMessageId, messageElement) {
+  _feedbackModalTarget = { botMessageId, messageElement };
+  const overlay = document.getElementById('feedback-modal-overlay');
+  const textarea = document.getElementById('feedback-modal-text');
+  const charCount = document.getElementById('feedback-modal-chars');
+  if (!overlay) return;
+  textarea.value = '';
+  if (charCount) charCount.textContent = '0';
+  overlay.style.display = 'flex';
+  textarea.focus();
+}
+
+function closeFeedbackModal() {
+  const overlay = document.getElementById('feedback-modal-overlay');
+  if (overlay) overlay.style.display = 'none';
+  _feedbackModalTarget = null;
+}
+
+async function submitFeedbackModal() {
+  if (!_feedbackModalTarget) return;
+  const { botMessageId, messageElement } = _feedbackModalTarget;
+  const textarea = document.getElementById('feedback-modal-text');
+  const userComment = (textarea ? textarea.value : '').trim();
+  const submitBtn = document.getElementById('feedback-modal-submit');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando...'; }
+
+  try {
+    const res = await fetch('/chatbot/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bot_message_id: botMessageId, rating: 'down', user_comment: userComment })
+    });
+    if (!res.ok) throw new Error('Erro ao enviar feedback');
+    const data = await res.json();
+    updateFeedbackState(messageElement, data.rating);
+    setFeedbackProcessingState(messageElement, 'Obrigado pelo feedback!');
+    setTimeout(() => setFeedbackProcessingState(messageElement, ''), 3000);
+    closeFeedbackModal();
+  } catch {
+    setFeedbackProcessingState(messageElement, 'Nao foi possivel enviar o feedback agora.');
+    setTimeout(() => setFeedbackProcessingState(messageElement, ''), 3000);
+    closeFeedbackModal();
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Enviar feedback'; }
+  }
+}
+
 async function sendFeedback(botMessageId, rating, messageElement) {
-  setFeedbackProcessingState(messageElement, rating === 'down' ? 'Estamos melhorando essa resposta para voce...' : '');
+  // Feedback positivo: envia diretamente sem modal
   try {
     const res = await fetch('/chatbot/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bot_message_id: botMessageId, rating })
     });
-    if (!res.ok) {
-      setFeedbackProcessingState(messageElement, rating === 'down' ? 'Nao foi possivel revisar a resposta agora.' : '');
-      return;
-    }
+    if (!res.ok) return;
     const data = await res.json();
     updateFeedbackState(messageElement, data.rating);
-    if (rating === 'down' && data.revised_response) {
-      setFeedbackProcessingState(messageElement, 'Resposta revisada gerada. Veja abaixo.');
-      createMessageBubble('bot', data.revised_response, {
-        messageId: data.revised_bot_message_id,
-        feedbackRating: data.revised_feedback_rating || null,
-      });
-      await refreshConversationList();
-      return;
-    }
-    setFeedbackProcessingState(messageElement, '');
-  } catch (error) {
-    setFeedbackProcessingState(messageElement, rating === 'down' ? 'Nao foi possivel revisar a resposta agora.' : '');
+  } catch {
+    // silencioso para feedback positivo
   }
 }
+
+// Inicializa eventos do modal de feedback
+document.addEventListener('DOMContentLoaded', () => {
+  const closeBtn = document.getElementById('feedback-modal-close');
+  const cancelBtn = document.getElementById('feedback-modal-cancel');
+  const submitBtn = document.getElementById('feedback-modal-submit');
+  const overlay = document.getElementById('feedback-modal-overlay');
+  const textarea = document.getElementById('feedback-modal-text');
+  const charCount = document.getElementById('feedback-modal-chars');
+
+  if (closeBtn) closeBtn.addEventListener('click', closeFeedbackModal);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeFeedbackModal);
+  if (submitBtn) submitBtn.addEventListener('click', submitFeedbackModal);
+  if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) closeFeedbackModal(); });
+  if (textarea && charCount) {
+    textarea.addEventListener('input', () => { charCount.textContent = textarea.value.length; });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay && overlay.style.display !== 'none') closeFeedbackModal();
+  });
+});
 
 function updateFeedbackState(messageElement, rating) {
   if (!messageElement) return;
@@ -419,12 +477,15 @@ function appendFeedbackControls(messageElement, botMessageId, feedbackRating = n
   downBtn.title = 'Não útil';
   downBtn.innerHTML = thumbsDownIcon;
 
-  [upBtn, downBtn].forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      await sendFeedback(botMessageId, btn.dataset.rating, messageElement);
-    });
-    wrapper.appendChild(btn);
+  upBtn.addEventListener('click', async () => {
+    await sendFeedback(botMessageId, 'up', messageElement);
   });
+  downBtn.addEventListener('click', () => {
+    // Abre modal para coletar comentário antes de enviar o feedback negativo
+    openFeedbackModal(botMessageId, messageElement);
+  });
+  wrapper.appendChild(upBtn);
+  wrapper.appendChild(downBtn);
 
   wrapper.prepend(label);
   contentDiv.appendChild(wrapper);

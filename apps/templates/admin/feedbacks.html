@@ -8,25 +8,26 @@
     <a href="{{ url_for('authentication_blueprint.admin_docs') }}" class="btn btn-sm btn-link">Voltar</a>
   </div>
 
+  <!-- Cards de resumo -->
   <div class="row g-3 mb-4">
     <div class="col-md-4">
-      <div class="card h-100">
+      <div class="card h-100 border-0 shadow-sm">
         <div class="card-body">
           <div class="text-muted small mb-1">Total de respostas com 👎</div>
-          <div class="display-6 fw-bold">{{ stats.total_down }}</div>
+          <div class="display-6 fw-bold text-danger">{{ stats.total_down }}</div>
         </div>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card h-100">
+      <div class="card h-100 border-0 shadow-sm">
         <div class="card-body">
-          <div class="text-muted small mb-1">Revisadas automaticamente</div>
-          <div class="display-6 fw-bold">{{ stats.revised_count }}</div>
+          <div class="text-muted small mb-1">Com comentário do usuário</div>
+          <div class="display-6 fw-bold text-primary">{{ stats.with_comment_count }}</div>
         </div>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card h-100">
+      <div class="card h-100 border-0 shadow-sm">
         <div class="card-body">
           <div class="text-muted small mb-1">Falha mais recorrente</div>
           <div class="fw-semibold mt-2">{{ stats.top_failure }}</div>
@@ -35,9 +36,10 @@
     </div>
   </div>
 
+  <!-- Gráficos analíticos -->
   <div class="row g-3 mb-4">
     <div class="col-lg-6">
-      <div class="card h-100">
+      <div class="card h-100 border-0 shadow-sm">
         <div class="card-body">
           <h5 class="card-title mb-3">Falhas Mais Recorrentes</h5>
           <ul class="list-group list-group-flush">
@@ -55,14 +57,14 @@
     </div>
 
     <div class="col-lg-6">
-      <div class="card h-100">
+      <div class="card h-100 border-0 shadow-sm">
         <div class="card-body">
           <h5 class="card-title mb-3">Perguntas Repetidamente Problemáticas</h5>
           <ul class="list-group list-group-flush">
             {% for item in recurring_questions %}
             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-              <span class="me-3 text-truncate">{{ item.question }}</span>
-              <span class="badge bg-secondary rounded-pill">{{ item.count }}</span>
+              <span class="me-3 text-truncate" style="max-width: 300px;" title="{{ item.question }}">{{ item.question }}</span>
+              <span class="badge bg-secondary rounded-pill">{{ item.count }}x</span>
             </li>
             {% else %}
             <li class="list-group-item px-0 text-muted">Sem repetições relevantes até o momento.</li>
@@ -73,7 +75,8 @@
     </div>
   </div>
 
-  <div class="card">
+  <!-- Listagem detalhada -->
+  <div class="card border-0 shadow-sm">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="card-title mb-0">Listagem de Respostas com 👎</h5>
@@ -82,31 +85,70 @@
 
       <div class="table-responsive">
         <table class="table table-hover align-middle">
-          <thead>
+          <thead class="table-light">
             <tr>
-              <th>#</th>
-              <th>Pergunta</th>
-              <th>Resposta anterior</th>
-              <th>Falha provável</th>
-              <th>Resposta revisada</th>
-              <th>Quando</th>
+              <th style="width: 40px;">#</th>
+              <th style="width: 220px;">Pergunta do usuário</th>
+              <th style="width: 280px;">Resposta do chatbot</th>
+              <th style="width: 100px;">Falha provável</th>
+              <th>Comentário do usuário</th>
+              <th style="width: 110px;">Quando</th>
             </tr>
           </thead>
           <tbody>
             {% for feedback in feedbacks %}
+            {% set parsed = parse_feedback_comment(feedback) %}
+            {% set row_id = "row-" ~ feedback.id %}
             <tr>
-              <td>{{ loop.index + ((pagination.page - 1) * pagination.per_page) }}</td>
-              <td style="max-width: 260px; white-space: normal;">{{ feedback.question or '-' }}</td>
-              <td style="max-width: 320px; white-space: normal;">{{ feedback.answer or '-' }}</td>
+              <td class="text-muted small">{{ loop.index + ((pagination.page - 1) * pagination.per_page) }}</td>
+
+              <td style="max-width: 220px;">
+                <span class="d-block text-truncate" title="{{ feedback.question or '' }}" style="max-width: 200px;">
+                  {{ feedback.question or '-' }}
+                </span>
+              </td>
+
+              <td style="max-width: 280px;">
+                <span class="d-block" style="max-width: 260px; max-height: 72px; overflow: hidden; white-space: pre-wrap; font-size: 0.82rem;">
+                  {{ (feedback.answer or '-')[:200] }}{% if (feedback.answer or '') | length > 200 %}…{% endif %}
+                </span>
+              </td>
+
               <td>
                 <span class="badge bg-warning text-dark">{{ classify_feedback_failure(feedback) }}</span>
               </td>
-              <td style="max-width: 320px; white-space: normal;">{{ feedback.comment or '-' }}</td>
-              <td>{{ feedback.updated_at.strftime('%d/%m/%Y %H:%M') if feedback.updated_at else '-' }}</td>
+
+              <td>
+                {% if parsed.user_comment %}
+                  <p class="mb-1 small" style="white-space: pre-wrap;">{{ parsed.user_comment }}</p>
+                {% else %}
+                  <span class="text-muted small fst-italic">Sem comentário</span>
+                {% endif %}
+
+                {% if parsed.conversation_history %}
+                <div class="mt-1">
+                  <button class="btn btn-link btn-sm p-0 text-secondary"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#hist-{{ feedback.id }}"
+                          aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Ver histórico da conversa
+                  </button>
+                  <div class="collapse mt-2" id="hist-{{ feedback.id }}">
+                    <pre class="bg-light rounded p-2 small" style="max-height: 260px; overflow-y: auto; white-space: pre-wrap; font-size: 0.75rem;">{{ parsed.conversation_history }}</pre>
+                  </div>
+                </div>
+                {% endif %}
+              </td>
+
+              <td class="text-muted small" style="white-space: nowrap;">
+                {{ feedback.updated_at.strftime('%d/%m/%Y %H:%M') if feedback.updated_at else '-' }}
+              </td>
             </tr>
             {% else %}
             <tr>
-              <td colspan="6" class="text-center">Sem respostas avaliadas como não úteis.</td>
+              <td colspan="6" class="text-center text-muted py-4">Sem respostas avaliadas como não úteis.</td>
             </tr>
             {% endfor %}
           </tbody>
