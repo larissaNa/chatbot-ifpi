@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 
-from .institutional_agent import consulta_institucional
+from apps.core.chat.prompts import get_conversational_prompt
+from .institutional_agent import consulta_institucional, _get_llm
 from .web_agent import responder_web
 
 
@@ -40,16 +44,63 @@ def _friendly_fallback(question: str, user_profile: str = "") -> str:
     )
 
 
+def _responder_conversacional(
+    question: str,
+    conversation_context: str,
+    user_profile: str,
+    today: str,
+) -> dict[str, Any]:
+    """
+    Terceira rota do supervisor: aciona o LLM com base no histórico da conversa
+    e na data de hoje. Usada para perguntas como 'Então já passou?' ou 'Que dia
+    é hoje?' que dependem do contexto conversacional, não de documentos.
+    """
+    if not conversation_context:
+        return {"status": "not_found", "answer": "", "rendered": ""}
+
+    llm = _get_llm()
+    try:
+        chain = (
+            ChatPromptTemplate.from_template(get_conversational_prompt())
+            | llm
+            | StrOutputParser()
+        )
+        answer = chain.invoke(
+            {
+                "question": (question or "").strip(),
+                "conversation_context": conversation_context,
+                "user_profile": (user_profile or "").strip() or "Nenhuma informação adicional conhecida.",
+                "today": today,
+            }
+        )
+        answer = (answer or "").strip()
+        if not answer:
+            return {"status": "not_found", "answer": "", "rendered": ""}
+
+        print(f"[SUPERVISOR][CONV] Resposta conversacional gerada para: '{question[:80]}'")
+        return {
+            "status": "success",
+            "answer": answer,
+            "sources": [],
+            "rendered": f"Resposta:\n{answer}",
+        }
+    except Exception as e:
+        print(f"[SUPERVISOR][CONV] Erro na rota conversacional: {e}")
+        return {"status": "not_found", "answer": "", "rendered": ""}
+
+
 def supervisor(state: dict[str, Any], config: dict[str, Any] | None = None) -> dict[str, Any]:
     messages = state.get("messages") or []
     question = _last_user_message(messages)
     conversation_context = _conversation_context(messages, limit=12)
     user_profile = str(state.get("user_profile") or "").strip()
+    today = datetime.now().strftime("%d/%m/%Y")
 
     rag = consulta_institucional(
         question,
         conversation_context=conversation_context,
         user_profile=user_profile,
+        today=today,
     )
     decision = {"route": "consulta_institucional", "rag_status": rag.get("status")}
 
@@ -65,7 +116,18 @@ def supervisor(state: dict[str, Any], config: dict[str, Any] | None = None) -> d
             "rag_status": rag.get("status"),
             "web_status": web.get("status"),
         }
-        result = web if web.get("status") == "success" else web
+        result = web
+
+        if web.get("status") != "success" and conversation_context:
+            conv = _responder_conversacional(question, conversation_context, user_profile, today)
+            if conv.get("status") == "success":
+                decision = {
+                    "route": "conversacional",
+                    "rag_status": rag.get("status"),
+                    "web_status": web.get("status"),
+                    "conv_status": conv.get("status"),
+                }
+                result = conv
 
     if result.get("status") == "success":
         rendered = (result.get("rendered") or "").strip() or _friendly_fallback(question, user_profile)
@@ -83,6 +145,7 @@ def supervisor(state: dict[str, Any], config: dict[str, Any] | None = None) -> d
             "rag_docs": (rag.get("docs") or [])[:6],
             "conversation_context": conversation_context,
             "user_profile": user_profile,
+            "today": today,
         },
         ensure_ascii=False,
     )
