@@ -53,10 +53,9 @@ def _responder_conversacional(
     """
     Terceira rota do supervisor: aciona o LLM com base no histórico da conversa
     e na data de hoje. Usada para perguntas como 'Então já passou?' ou 'Que dia
-    é hoje?' que dependem do contexto conversacional, não de documentos.
+    é hoje?' que dependem do contexto conversacional ou da data atual.
+    Não exige histórico — a data sozinha já permite responder algumas perguntas.
     """
-    if not conversation_context:
-        return {"status": "not_found", "answer": "", "rendered": ""}
 
     llm = _get_llm()
     try:
@@ -118,7 +117,7 @@ def supervisor(state: dict[str, Any], config: dict[str, Any] | None = None) -> d
         }
         result = web
 
-        if web.get("status") != "success" and conversation_context:
+        if web.get("status") != "success":
             conv = _responder_conversacional(question, conversation_context, user_profile, today)
             if conv.get("status") == "success":
                 decision = {
