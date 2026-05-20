@@ -3,7 +3,7 @@
 Rotas de autenticacao e registro.
 """
 
-from flask import redirect, render_template, request, url_for
+from flask import current_app, redirect, render_template, request, url_for
 from flask_login import current_user, login_user, logout_user
 
 from apps import db
@@ -21,9 +21,11 @@ def health():
 
 @blueprint.route("/")
 def route_default():
+    # Em prod, todos vão direto ao chatbot sem precisar fazer login
+    if current_app.config.get('APP_ENV') == 'prod':
+        return redirect(url_for("home_blueprint.index"))
     if current_user.is_authenticated:
         return redirect(url_for("home_blueprint.index"))
-    # Redireciona para login por padrão, sem precisar de ?ui=1
     return redirect(url_for("authentication_blueprint.login"))
 
 @blueprint.route("/login", methods=["GET", "POST"])

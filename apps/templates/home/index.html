@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+{% extends "layouts/base-prod.html" if (config.APP_ENV == 'prod' and not current_user.is_authenticated) else "layouts/base.html" %}
 
 {% block title %} Chatbot IFPI {% endblock title %}
 
@@ -65,8 +65,10 @@
 
 {% block javascripts %}
 <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
- <script>
+<script>
   const logoUrl = "{{ url_for('static', filename='assets/images/logo.png') }}";
+  // Modo da aplicação: 'prod' = sem histórico, sem raciocínio, sem sidebar
+  window.CHAT_MODE = "{{ config.APP_ENV if config.APP_ENV == 'prod' else 'dev' }}";
 </script>
- <script src="{{ config.ASSETS_ROOT }}/js/index-chat.js"></script>
+<script src="{{ config.ASSETS_ROOT }}/js/index-chat.js"></script>
 {% endblock javascripts %}

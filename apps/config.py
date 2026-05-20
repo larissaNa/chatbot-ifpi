@@ -12,6 +12,10 @@ class Config(object):
     # Assets Management
     ASSETS_ROOT = os.getenv('ASSETS_ROOT', '/static/assets')
 
+    # Ambiente: 'dev' mantém login obrigatório e UI completa.
+    # 'prod' libera o chatbot sem login e exibe UI mínima (sem sidebar/navbar).
+    APP_ENV = os.getenv('ENV', 'dev').strip().lower()
+
     # Set up the App SECRET_KEY
     SECRET_KEY  = os.getenv('SECRET_KEY', None)
     if not SECRET_KEY:
