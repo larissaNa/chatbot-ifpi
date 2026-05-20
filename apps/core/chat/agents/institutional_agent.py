@@ -321,14 +321,14 @@ def consulta_institucional(
     score_threshold: float = 0.40,
     conversation_context: str = "",
     user_profile: str = "",
+    today: str = "",
 ) -> dict[str, Any]:
-    # NOVO: Contextualiza a busca antes de ir ao banco vetorial
+    from datetime import datetime
+    today = today or datetime.now().strftime("%d/%m/%Y")
+
     search_query = _generate_search_query(question, conversation_context, user_profile)
-    
-    # Agora o retrieval usa a query expandida (ex: "horários aula ADS V módulo") 
-    # em vez de "horários para minha turma"
     retrieval = retrieve_with_threshold(search_query, k=k, score_threshold=score_threshold)
-    
+
     if retrieval.get("status") != "success":
         rendered = f"Resposta:\n{NOT_FOUND_ANSWER}"
         return {
@@ -352,6 +352,7 @@ def consulta_institucional(
             "not_found_answer": NOT_FOUND_ANSWER,
             "conversation_context": (conversation_context or "").strip() or "Sem histórico relevante.",
             "user_profile": (user_profile or "").strip() or "Nenhuma informação adicional conhecida.",
+            "today": today,
         }
     )
 

@@ -1,3 +1,4 @@
+from .conversational_prompt import get_conversational_prompt
 from .feedback_prompt import get_feedback_rewrite_prompt
 from .qa_prompt import get_qa_prompt
 from .rag_prompt import get_rag_answer_prompt
@@ -10,4 +11,5 @@ __all__ = [
     "get_rag_answer_prompt",
     "get_web_answer_prompt",
     "get_feedback_rewrite_prompt",
+    "get_conversational_prompt",
 ]
