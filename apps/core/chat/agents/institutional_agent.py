@@ -139,6 +139,69 @@ def _expand_with_sibling_chunks(
     return combined
 
 
+_PROVA_KEYWORDS = frozenset({
+    "prova", "avaliação", "avaliações", "bimestral", "bimestrais",
+    "quantos dias", "quando foi", "data da prova", "teste", "exame",
+})
+
+
+def _inject_eval_docs(
+    question: str,
+    vectorstore: Any,
+    seen_map: dict[str, tuple[Any, float]],
+    base_relevance: float = 0.42,
+) -> list[tuple[Any, float]]:
+    """
+    Quando a pergunta menciona provas/avaliações, busca DIRETAMENTE todos os chunks
+    de documentos de avaliação via metadados, contornando o gap semântico entre
+    queries sobre datas de prova e o formato dos documentos indexados (grade/calendário).
+    """
+    q_lower = (question or "").lower()
+    if not any(kw in q_lower for kw in _PROVA_KEYWORDS):
+        return []
+
+    collection = getattr(vectorstore, "_collection", None)
+    if collection is None:
+        return []
+
+    try:
+        all_data = collection.get(include=["metadatas"])
+        all_metas = all_data.get("metadatas") or []
+
+        eval_crencas: set[str] = set()
+        for meta in all_metas:
+            titulo = str(meta.get("titulo") or meta.get("documento_titulo") or "").lower()
+            if any(kw in titulo for kw in ("avali", "prova", "bimestral")):
+                crenca = str(meta.get("id_crenca", ""))
+                if crenca:
+                    eval_crencas.add(crenca)
+
+        if not eval_crencas:
+            print("[RAG][EVAL_INJECT] Nenhum documento de avaliação nos metadados.")
+            return []
+
+        print(f"[RAG][EVAL_INJECT] Injetando chunks de {len(eval_crencas)} documento(s) de avaliação.")
+        from langchain_core.documents import Document
+
+        extra: list[tuple[Any, float]] = []
+        for crenca in eval_crencas:
+            result = collection.get(
+                where={"id_crenca": {"$eq": crenca}},
+                include=["documents", "metadatas"],
+            )
+            for doc_text, meta in zip(result.get("documents") or [], result.get("metadatas") or []):
+                chunk_id = str(meta.get("chunk_id", "") or hash(doc_text))
+                if chunk_id in seen_map:
+                    continue
+                extra.append((Document(page_content=doc_text, metadata=meta), base_relevance))
+
+        return extra
+
+    except Exception as e:
+        print(f"[RAG][EVAL_INJECT] Erro: {e}")
+        return []
+
+
 def retrieve_with_threshold(
     question: str,
     *,
@@ -183,6 +246,17 @@ def retrieve_with_threshold(
         prev = seen_map.get(str(doc_id))
         if not prev or relevance > prev[1]:
             seen_map[str(doc_id)] = (doc, relevance)
+
+    # Injeção direta de documentos de avaliação quando a pergunta menciona provas
+    eval_extra = _inject_eval_docs(q, vectorstore, seen_map)
+    for doc, rel in eval_extra:
+        doc_id = str(
+            getattr(doc, "id", None)
+            or getattr(doc, "metadata", {}).get("chunk_id")
+            or hash(getattr(doc, "page_content", ""))
+        )
+        if doc_id not in seen_map:
+            seen_map[doc_id] = (doc, rel)
 
     docs_with_scores = list(seen_map.values())
 
