@@ -443,6 +443,65 @@ def retrieve_with_threshold(
     return {"status": "success", "docs": docs_out, "sources": sources_out}
 
 
+_INJECTION_PATTERNS = [
+    # Marcadores de seção de instrução (###, ***, ---)
+    r"#{2,}\s*(?:instrução|instruction|ignore|override|system|priorit|aviso|alert|warning|comando|command)",
+    # Verbos de controle típicos de injection
+    r"(?:ignore|ignorar|desconsider|esqueça|forget)\s+(?:all\s+)?(?:previous|prior|above|anterior|tudo|as instruções)",
+    # Frases que direcionam o comportamento do modelo
+    r"(?:responda?\s+(?:apenas|somente|só)|you\s+(?:must|should|have\s+to)\s+(?:respond|say|answer))",
+    r"(?:nunca\s+(?:diga|mencione|revele|fale|informe)|never\s+(?:say|mention|reveal))",
+    r"(?:você\s+(?:deve|precisa|tem\s+que|vai|irá)\s+(?:dizer|responder|ignorar|falar|afirmar))",
+    # Declarações de prioridade / escopo de instrução
+    r"(?:esta?\s+(?:documento|instrução|texto|prompt|mensagem)\s+(?:possui|tem|é)\s+(?:prioridade|priority|máxima|superior))",
+    r"(?:instrução\s+(?:prioritária|oculta|secreta|especial|de sistema|do sistema))",
+    r"(?:prioridade\s+máxima|highest\s+priority|override\s+all)",
+    # Delimitadores de sistema comuns em ataques
+    r"(?:\[INST\]|\[SYS\]|<\|system\|>|<\|im_start\|>|\[SYSTEM\]|<<SYS>>)",
+    # Pedidos de não divulgação da injeção
+    r"(?:nunca\s+diga|não\s+(?:revele|mencione|diga)\s+que\s+(?:isso|este?a?)\s+veio)",
+    r"(?:never\s+(?:reveal|mention|say)\s+(?:this|that)\s+came?\s+from)",
+]
+
+import re as _re
+_COMPILED_INJECTION = [_re.compile(p, _re.IGNORECASE) for p in _INJECTION_PATTERNS]
+
+
+def _sanitize_chunk_content(content: str, source_title: str = "") -> str:
+    """
+    Detecta e neutraliza tentativas de prompt injection em chunks de documentos.
+
+    Substitui linhas/parágrafos suspeitos por um marcador neutro, preservando
+    o restante do conteúdo legítimo do documento.
+
+    Defende contra: instrução oculta em texto branco/minúsculo, marcadores ###,
+    verbos de controle ('ignore', 'responda apenas', 'nunca diga'), declarações
+    de prioridade, e delimitadores de sistema.
+    """
+    if not content:
+        return content
+
+    lines = content.splitlines()
+    clean_lines: list[str] = []
+    flagged = 0
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            clean_lines.append(line)
+            continue
+
+        is_injection = any(pat.search(stripped) for pat in _COMPILED_INJECTION)
+        if is_injection:
+            flagged += 1
+            clean_lines.append("[conteúdo removido por política de segurança]")
+            print(f"[RAG][SECURITY] Possível prompt injection detectado em '{source_title}': {stripped[:80]!r}")
+        else:
+            clean_lines.append(line)
+
+    return "\n".join(clean_lines)
+
+
 def _format_context(docs: list[dict[str, Any]]) -> str:
     blocks: list[str] = []
     for d in docs:
@@ -451,6 +510,8 @@ def _format_context(docs: list[dict[str, Any]]) -> str:
         url = src.get("url") or ""
         page = src.get("page")
         page_part = f"Página: {page}" if page not in (None, "", 0) else "Página: n/d"
+        raw_content = str(d.get("content") or "")
+        safe_content = _sanitize_chunk_content(raw_content, source_title=title)
         blocks.append(
             "\n".join(
                 [
@@ -459,7 +520,7 @@ def _format_context(docs: list[dict[str, Any]]) -> str:
                     f"URL: {url}",
                     page_part,
                     "Trecho:",
-                    str(d.get("content") or ""),
+                    safe_content,
                 ]
             )
         )
