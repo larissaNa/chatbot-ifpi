@@ -1,0 +1,189 @@
+{% extends "layouts/base.html" %}
+{% block title %} Conversas Externas {% endblock title %}
+
+{% block stylesheets %}
+<style>
+  .conv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .conv-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: box-shadow .15s, border-color .15s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .conv-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+    border-color: #6366f1;
+    text-decoration: none;
+    color: inherit;
+  }
+  .conv-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .conv-title {
+    font-weight: 600;
+    font-size: .95rem;
+    color: #1e293b;
+    line-height: 1.35;
+    flex: 1;
+    word-break: break-word;
+  }
+  .conv-badge {
+    background: #f1f5f9;
+    color: #64748b;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .conv-preview {
+    font-size: .83rem;
+    color: #64748b;
+    line-height: 1.45;
+    border-left: 3px solid #e2e8f0;
+    padding-left: 10px;
+  }
+  .conv-preview.sender-bot {
+    border-left-color: #6366f1;
+  }
+  .conv-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: .75rem;
+    color: #94a3b8;
+  }
+  .conv-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+  }
+  .conv-empty i {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 12px;
+  }
+  .page-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .page-header-row h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .page-meta {
+    font-size: .82rem;
+    color: #94a3b8;
+  }
+  .pagination-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 32px;
+    gap: 8px;
+  }
+  .pagination-row a,
+  .pagination-row span {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: .85rem;
+    border: 1px solid #e5e7eb;
+    text-decoration: none;
+    color: #374151;
+  }
+  .pagination-row a:hover { background: #f1f5f9; }
+  .pagination-row .current-page {
+    background: #6366f1;
+    color: #fff;
+    border-color: #6366f1;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header-row">
+    <div>
+      <h3><i class="ti-world" style="font-size:1.1rem; margin-right:6px; color:#6366f1;"></i>Conversas Externas</h3>
+      <span class="page-meta">{{ total_threads }} conversa{{ 's' if total_threads != 1 else '' }} de usuários externos (sem login)</span>
+    </div>
+  </div>
+
+  {% if conversations %}
+  <div class="conv-grid">
+    {% for c in conversations %}
+    <a class="conv-card" href="{{ url_for('authentication_blueprint.admin_conversation_detail', thread_id=c.thread_id) }}">
+      <div class="conv-card-header">
+        <span class="conv-title">{{ c.title }}</span>
+        <span class="conv-badge">{{ c.msg_count }} msg{{ 's' if c.msg_count != 1 else '' }}</span>
+      </div>
+      {% if c.last_preview %}
+      <div class="conv-preview {{ 'sender-bot' if c.last_sender == 'bot' else '' }}">
+        <strong style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;opacity:.7;">
+          {{ 'Assistente' if c.last_sender == 'bot' else 'Usuário' }}
+        </strong><br>
+        {{ c.last_preview }}{% if c.last_preview|length >= 100 %}…{% endif %}
+      </div>
+      {% endif %}
+      <div class="conv-footer">
+        <span><i class="ti-tag" style="margin-right:4px;"></i>{{ c.thread_id[:12] }}…</span>
+        {% if c.last_at %}
+        <span>{{ c.last_at.strftime('%d/%m/%Y %H:%M') }}</span>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if total_pages > 1 %}
+  <div class="pagination-row">
+    {% if page > 1 %}
+    <a href="{{ url_for('authentication_blueprint.admin_conversations', page=page-1) }}">&larr; Anterior</a>
+    {% endif %}
+
+    {% for p in range(1, total_pages+1) %}
+      {% if p == page %}
+        <span class="current-page">{{ p }}</span>
+      {% elif p <= 3 or p >= total_pages-2 or (p >= page-2 and p <= page+2) %}
+        <a href="{{ url_for('authentication_blueprint.admin_conversations', page=p) }}">{{ p }}</a>
+      {% elif p == 4 or p == total_pages-3 %}
+        <span style="border:none;padding:6px 4px;color:#94a3b8;">…</span>
+      {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+    <a href="{{ url_for('authentication_blueprint.admin_conversations', page=page+1) }}">Próxima &rarr;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="conv-empty">
+    <i class="ti-comments"></i>
+    <p style="font-size:1rem;font-weight:600;color:#475569;margin-bottom:4px;">Nenhuma conversa externa ainda</p>
+    <p style="font-size:.85rem;">As conversas de usuários externos (sem login) aparecerão aqui.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock content %}

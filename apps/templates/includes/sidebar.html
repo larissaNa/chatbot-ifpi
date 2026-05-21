@@ -99,6 +99,17 @@
           <span class="title">Feedbacks Negativos</span>
         </a>
       </li>
+
+      <li class="nav-item">
+        <a
+          class="sidebar-link {{ 'actived' if current_endpoint in ['authentication_blueprint.admin_conversations', 'authentication_blueprint.admin_conversation_detail'] else '' }}"
+          href="{{ url_for('authentication_blueprint.admin_conversations') }}"
+          title="Conversas Externas"
+        >
+          <span class="icon-holder"><i class="ti-world"></i></span>
+          <span class="title">Conversas Externas</span>
+        </a>
+      </li>
       {% endif %}
     </ul>
   </div>
