@@ -371,11 +371,13 @@ Consulta de Busca (responda SOMENTE com a query, sem explicações):""")
 
 def _render_answer(answer: str, sources: list[dict[str, Any]]) -> str:
     a = (answer or "").strip()
-    if not a:
-        a = NOT_FOUND_ANSWER
-
-    if not sources:
+    # Se o LLM não gerou resposta ou retornou explicitamente NOT_FOUND, não há o que renderizar
+    if not a or a == NOT_FOUND_ANSWER:
         return f"Resposta:\n{NOT_FOUND_ANSWER}"
+
+    # Resposta válida: apresenta o texto e, se houver fontes, lista-as
+    if not sources:
+        return f"Resposta:\n{a}"
 
     lines = [f"Resposta:\n{a}", "", "Fontes:"]
     for source in sources:
@@ -388,6 +390,26 @@ def _render_answer(answer: str, sources: list[dict[str, Any]]) -> str:
         else:
             lines.append(f"- {title}{page_part}")
     return "\n".join(lines).strip()
+
+
+def _extract_keywords(question: str) -> str:
+    """
+    Extrai os termos mais informativos da pergunta para formar uma query de busca ampla.
+    Remove stop words e palavras interrogativas, mantendo nomes, substantivos e termos técnicos.
+    Exemplo: "quais as disciplinas do professor sekeff?" → "disciplinas professor sekeff"
+    """
+    stop_words = {
+        "quais", "qual", "o", "a", "os", "as", "de", "do", "da", "dos", "das",
+        "em", "no", "na", "nos", "nas", "por", "para", "com", "que", "é", "são",
+        "me", "meu", "minha", "meus", "minhas", "um", "uma", "uns", "umas",
+        "isso", "este", "esta", "estes", "estas", "esse", "essa", "esses", "essas",
+        "tem", "ter", "há", "foi", "ser", "como", "quando", "onde", "se", "seu",
+        "sua", "seus", "suas", "quem", "quanto", "quantos", "quantas", "já",
+    }
+    import re
+    tokens = re.sub(r"[^\w\sÀ-ÿ]", " ", (question or "").lower()).split()
+    keywords = [t for t in tokens if t not in stop_words and len(t) > 2]
+    return " ".join(keywords)
 
 
 def consulta_institucional(
@@ -434,11 +456,22 @@ def consulta_institucional(
 
     answer = (answer or "").strip()
     if answer == NOT_FOUND_ANSWER:
-        # Retry: a query reescrita pode ter sido específica demais e perdeu o documento correto.
+        # Retry 1: a query reescrita pode ter sido específica demais e perdeu o documento correto.
         # Tentamos novamente com a pergunta original (sem reescrita de contexto).
+        retry_queries: list[str] = []
+
         if search_query.strip().lower() != question.strip().lower():
-            print(f"[RAG][RETRY] LLM retornou NOT_FOUND após query reescrita. Tentando com pergunta original.")
-            retrieval2 = retrieve_with_threshold(question, k=k, score_threshold=score_threshold)
+            retry_queries.append(question)
+
+        # Retry 2: extrai os substantivos/termos-chave da pergunta para ampliar a busca.
+        # Exemplo: "quais as disciplinas do professor sekeff?" → "professor sekeff disciplinas"
+        keywords = _extract_keywords(question)
+        if keywords and keywords.strip().lower() not in [q.strip().lower() for q in retry_queries + [search_query, question]]:
+            retry_queries.append(keywords)
+
+        for i, retry_q in enumerate(retry_queries, start=1):
+            print(f"[RAG][RETRY {i}] LLM retornou NOT_FOUND. Tentando com query alternativa: '{retry_q[:80]}'")
+            retrieval2 = retrieve_with_threshold(retry_q, k=k, score_threshold=score_threshold)
             if retrieval2.get("status") == "success":
                 docs2 = retrieval2.get("docs") or []
                 sources2 = retrieval2.get("sources") or []
@@ -455,7 +488,7 @@ def consulta_institucional(
                 )
                 answer2 = (answer2 or "").strip()
                 if answer2 and answer2 != NOT_FOUND_ANSWER:
-                    print(f"[RAG][RETRY] Retry bem-sucedido com query original.")
+                    print(f"[RAG][RETRY {i}] Retry bem-sucedido.")
                     return {
                         "status": "success",
                         "answer": answer2,
@@ -463,7 +496,7 @@ def consulta_institucional(
                         "docs": docs2,
                         "rendered": _render_answer(answer2, sources2),
                     }
-                print(f"[RAG][RETRY] Retry também retornou NOT_FOUND.")
+                print(f"[RAG][RETRY {i}] Retry também retornou NOT_FOUND.")
 
         rendered = f"Resposta:\n{NOT_FOUND_ANSWER}"
         return {
