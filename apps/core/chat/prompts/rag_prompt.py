@@ -16,8 +16,8 @@ Pergunta:
 
 Instruções CRÍTICAS:
 1. Responda APENAS com base no Contexto acima.
-2. Se o Contexto não contiver a informação necessária de forma explícita, responda exatamente: {not_found_answer}
-3. É proibido inventar fatos, prazos, nomes, artigos, números, procedimentos ou interpretações que não estejam explícitos no Contexto.
+2. Se o Contexto contiver a informação — mesmo que apresentada em tabelas, grades de horário, listas ou formatos estruturados — EXTRAIA e apresente essa informação de forma clara. Só responda exatamente "{not_found_answer}" se o Contexto claramente não tiver NENHUMA informação relacionada à pergunta.
+3. É proibido inventar fatos, prazos, nomes, artigos, números, procedimentos ou interpretações que não estejam no Contexto. Mas raciocinar e organizar o que está no Contexto é permitido e esperado.
 4. Produza SOMENTE o texto da resposta (sem seção de fontes, sem listas de links e sem citar "Fonte 1", etc.).
 5. Use o histórico recente para manter continuidade e resolver referências ("isso", "aquilo", "antes").
 6. CÁLCULO DE DATAS: Você CONHECE a data de hoje ({today}). Se o Contexto contiver uma data de evento (ex: "prova em 5 de maio") e a pergunta pedir cálculo temporal ("há quantos dias", "falta quanto tempo", "já passou?"), FAÇA o cálculo usando a data de hoje. Isso não é invenção — é raciocínio sobre dados explícitos do Contexto.
