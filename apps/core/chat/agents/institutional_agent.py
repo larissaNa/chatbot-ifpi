@@ -144,6 +144,123 @@ _PROVA_KEYWORDS = frozenset({
     "quantos dias", "quando foi", "data da prova", "teste", "exame",
 })
 
+# Stop words que NÃO são nomes próprios e devem ser ignoradas na extração de entidades
+_ENTITY_STOP = frozenset({
+    "quais", "qual", "como", "quando", "onde", "quem", "quanto", "quantos",
+    "quantas", "isso", "este", "esta", "esse", "essa", "aquele", "aquela",
+    "ifpi", "campus", "curso", "turma", "aula", "aulas", "disciplina",
+    "disciplinas", "horário", "horarios", "professor", "professora", "professores",
+    "prof", "docente", "docentes", "semestre", "período", "periodo",
+})
+
+
+def _extract_entity_names(question: str) -> list[str]:
+    """
+    Extrai nomes próprios (prováveis nomes de pessoas, disciplinas específicas, etc.)
+    da pergunta para uso em busca textual direta.
+
+    Estratégias:
+    1. Palavra(s) imediatamente após "professor(a)" / "prof." / "docente"
+    2. Palavras capitalizadas na query original (usuário digitou com maiúscula)
+    3. Palavras não-stop com >= 4 letras que aparecem após indicadores semânticos
+    """
+    import re
+
+    names: list[str] = []
+
+    # Estratégia 1: padrão "professor <Nome>" (usuário pode digitar em minúsculo)
+    for match in re.finditer(
+        r'(?:professora?|prof\.?|docente)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ]{2,}(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ]{2,})?)',
+        question, re.IGNORECASE
+    ):
+        candidate = match.group(1).strip()
+        # pega apenas o sobrenome/último token se for composto
+        for token in candidate.split():
+            if token.lower() not in _ENTITY_STOP and len(token) >= 3:
+                names.append(token)
+
+    # Estratégia 2: palavras que o próprio usuário escreveu em maiúscula
+    for word in re.findall(r'\b([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]{2,})\b', question):
+        if word.lower() not in _ENTITY_STOP:
+            names.append(word)
+
+    # Remove duplicatas preservando ordem
+    seen: set[str] = set()
+    unique: list[str] = []
+    for n in names:
+        key = n.lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(n)
+    return unique
+
+
+def _inject_by_text_search(
+    question: str,
+    vectorstore: Any,
+    seen_map: dict[str, tuple[Any, float]],
+    base_relevance: float = 0.46,
+) -> list[tuple[Any, float]]:
+    """
+    Busca textual direta por nomes próprios detectados na pergunta.
+    Contorna o gap semântico entre consultas sobre entidades específicas
+    (professores, disciplinas) e documentos que mencionam essas entidades
+    em formatos tabulares/estruturados que o embedding model não recupera bem.
+    """
+    entity_names = _extract_entity_names(question)
+    if not entity_names:
+        return []
+
+    collection = getattr(vectorstore, "_collection", None)
+    if collection is None:
+        return []
+
+    from langchain_core.documents import Document
+
+    extra: list[tuple[Any, float]] = []
+    already_added: set[str] = set(seen_map.keys())
+    found_any = False
+
+    for name in entity_names:
+        # Tenta variações de capitalização para cobrir MAIÚSCULA, Title Case, lower
+        variants = sorted({
+            name,
+            name.upper(),
+            name.capitalize(),
+            name.lower(),
+        })
+        for variant in variants:
+            try:
+                result = collection.get(
+                    where_document={"$contains": variant},
+                    include=["documents", "metadatas"],
+                )
+                docs_list = result.get("documents") or []
+                metas_list = result.get("metadatas") or []
+
+                if not docs_list:
+                    continue
+
+                print(f"[RAG][TEXT_INJECT] '{variant}' → {len(docs_list)} chunk(s) via busca textual.")
+                found_any = True
+
+                for doc_text, meta in zip(docs_list, metas_list):
+                    chunk_id = str(meta.get("chunk_id", "") or hash(doc_text))
+                    if chunk_id in already_added:
+                        continue
+                    already_added.add(chunk_id)
+                    extra.append((Document(page_content=doc_text, metadata=meta), base_relevance))
+
+                break  # variante funcionou, não precisa tentar outras
+            except Exception as e:
+                print(f"[RAG][TEXT_INJECT] Erro buscando '{variant}': {e}")
+                continue
+
+    if not found_any:
+        print(f"[RAG][TEXT_INJECT] Nenhum chunk encontrado via busca textual para: {entity_names}")
+
+    return extra
+
 _PROFESSOR_TRIGGERS = frozenset({
     "professor", "professora", "prof", "prof.", "docente",
     "disciplinas do", "aulas do", "aulas da", "leciona", "ministra",
@@ -336,6 +453,20 @@ def retrieve_with_threshold(
     # Injeção direta de documentos de avaliação quando a pergunta menciona provas
     eval_extra = _inject_eval_docs(q, vectorstore, seen_map)
     for doc, rel in eval_extra:
+        doc_id = str(
+            getattr(doc, "id", None)
+            or getattr(doc, "metadata", {}).get("chunk_id")
+            or hash(getattr(doc, "page_content", ""))
+        )
+        if doc_id not in seen_map:
+            seen_map[doc_id] = (doc, rel)
+
+    # Injeção por busca textual: quando a pergunta menciona nomes próprios
+    # (professores, disciplinas específicas, etc.), busca chunks que contêm
+    # aquele termo diretamente no texto — contorna o domínio de documentos grandes
+    # (ex: Manual do Servidor) na busca semântica.
+    text_extra = _inject_by_text_search(q, vectorstore, seen_map)
+    for doc, rel in text_extra:
         doc_id = str(
             getattr(doc, "id", None)
             or getattr(doc, "metadata", {}).get("chunk_id")
