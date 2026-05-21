@@ -144,6 +144,92 @@ _PROVA_KEYWORDS = frozenset({
     "quantos dias", "quando foi", "data da prova", "teste", "exame",
 })
 
+_PROFESSOR_TRIGGERS = frozenset({
+    "professor", "professora", "prof", "prof.", "docente",
+    "disciplinas do", "aulas do", "aulas da", "leciona", "ministra",
+    "ensina", "horário do professor", "horário da professora",
+})
+
+
+def _extract_professor_name(question: str) -> str | None:
+    """
+    Tenta extrair o nome do professor da pergunta.
+    Retorna o sobrenome/nome principal encontrado após palavras-gatilho como
+    'professor', 'prof', 'professora', etc.
+    Exemplo: 'quais as disciplinas do professor Sekeff?' → 'Sekeff'
+    """
+    import re
+    q = (question or "").strip()
+    # Padrão: palavra-gatilho seguida do nome (1 a 3 palavras em maiúscula ou com inicial maiúscula)
+    pattern = r"(?:professor[a]?|prof\.?|docente)\s+([A-ZÀ-Ÿa-zà-ÿ][A-Za-zÀ-Ÿà-ÿ]+(?:\s+[A-Za-zÀ-Ÿà-ÿ]+){0,2})"
+    match = re.search(pattern, q, re.IGNORECASE)
+    if match:
+        name = match.group(1).strip()
+        # Remove artigos/preposições no início do nome capturado
+        name = re.sub(r"^(do|da|de|dos|das)\s+", "", name, flags=re.IGNORECASE).strip()
+        return name if len(name) > 2 else None
+    return None
+
+
+def _inject_professor_docs(
+    question: str,
+    vectorstore: Any,
+    seen_map: dict[str, tuple[Any, float]],
+    base_relevance: float = 0.55,
+) -> list[tuple[Any, float]]:
+    """
+    Quando a pergunta menciona um professor específico, busca DIRETAMENTE todos os
+    chunks que contêm o nome do professor via busca textual no ChromaDB
+    (where_document). Isso contorna o gap semântico em que a busca por embeddings
+    retorna documentos de outro tipo (ex: Manual do Servidor) em vez do horário.
+    """
+    q_lower = (question or "").lower()
+    # Verifica se a pergunta é sobre um professor
+    if not any(kw in q_lower for kw in _PROFESSOR_TRIGGERS):
+        return []
+
+    professor_name = _extract_professor_name(question)
+    if not professor_name:
+        return []
+
+    collection = getattr(vectorstore, "_collection", None)
+    if collection is None:
+        return []
+
+    try:
+        # Tenta variações de capitalização: "Sekeff", "sekeff", "SEKEFF"
+        name_variants = list({professor_name, professor_name.lower(), professor_name.upper(), professor_name.title()})
+        from langchain_core.documents import Document
+
+        extra: list[tuple[Any, float]] = []
+        found_chunks: set[str] = set()
+
+        for variant in name_variants:
+            try:
+                result = collection.get(
+                    where_document={"$contains": variant},
+                    include=["documents", "metadatas"],
+                )
+                for doc_text, meta in zip(result.get("documents") or [], result.get("metadatas") or []):
+                    chunk_id = str(meta.get("chunk_id", "") or hash(doc_text))
+                    if chunk_id in seen_map or chunk_id in found_chunks:
+                        continue
+                    found_chunks.add(chunk_id)
+                    extra.append((Document(page_content=doc_text, metadata=meta), base_relevance))
+            except Exception:
+                continue
+
+        if extra:
+            print(f"[RAG][PROF_INJECT] Encontrados {len(extra)} chunks com '{professor_name}' via busca textual.")
+        else:
+            print(f"[RAG][PROF_INJECT] Nenhum chunk encontrado com o nome '{professor_name}'.")
+
+        return extra
+
+    except Exception as e:
+        print(f"[RAG][PROF_INJECT] Erro: {e}")
+        return []
+
 
 def _inject_eval_docs(
     question: str,
@@ -250,6 +336,18 @@ def retrieve_with_threshold(
     # Injeção direta de documentos de avaliação quando a pergunta menciona provas
     eval_extra = _inject_eval_docs(q, vectorstore, seen_map)
     for doc, rel in eval_extra:
+        doc_id = str(
+            getattr(doc, "id", None)
+            or getattr(doc, "metadata", {}).get("chunk_id")
+            or hash(getattr(doc, "page_content", ""))
+        )
+        if doc_id not in seen_map:
+            seen_map[doc_id] = (doc, rel)
+
+    # Injeção direta de chunks com o nome do professor via busca textual
+    # Contorna o gap semântico quando documentos de horário/grade não aparecem no top-k
+    prof_extra = _inject_professor_docs(q, vectorstore, seen_map)
+    for doc, rel in prof_extra:
         doc_id = str(
             getattr(doc, "id", None)
             or getattr(doc, "metadata", {}).get("chunk_id")
