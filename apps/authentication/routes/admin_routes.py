@@ -18,11 +18,13 @@ from apps.authentication import blueprint
 from apps.authentication.decorators import admin_required
 from apps.authentication import (
     ChatFeedback,
+    ChatMessage,
     DocumentoOficial,
     DocumentoVersao,
     LogProcessamento,
 )
 from apps.core.documents.services.revision_orchestrator import executar_revisao_documento
+from apps.core.chat.services.serialization_service import build_conversation_summaries
 
 
 def _normalize_feedback_text(value: str) -> str:
@@ -302,3 +304,90 @@ def admin_revisar_doc(doc_id):
         flash(f"Erro crítico ao executar revisão: {str(e)}", "danger")
 
     return redirect(request.referrer or url_for("authentication_blueprint.admin_docs"))
+
+
+@blueprint.route("/admin/conversations")
+@login_required
+@admin_required
+def admin_conversations():
+    """Lista todas as conversas de usuários externos (user_id IS NULL)."""
+    page = int(request.args.get("page", 1))
+    per_page = 30
+
+    # Busca todos os thread_ids distintos de mensagens anônimas, ordenados pela mais recente
+    from sqlalchemy import func
+    subq = (
+        db.session.query(
+            ChatMessage.thread_id,
+            func.max(ChatMessage.created_at).label("last_at"),
+            func.count(ChatMessage.id).label("msg_count"),
+        )
+        .filter(ChatMessage.user_id.is_(None))
+        .group_by(ChatMessage.thread_id)
+        .order_by(desc(func.max(ChatMessage.created_at)))
+    )
+
+    total_threads = subq.count()
+    thread_rows = subq.offset((page - 1) * per_page).limit(per_page).all()
+
+    # Para cada thread, busca a primeira mensagem do usuário (título) e a última mensagem (preview)
+    conversations = []
+    for row in thread_rows:
+        thread_id = row.thread_id
+        first_user_msg = (
+            ChatMessage.query
+            .filter(ChatMessage.thread_id == thread_id, ChatMessage.user_id.is_(None), ChatMessage.sender == "user")
+            .order_by(ChatMessage.created_at.asc())
+            .first()
+        )
+        last_msg = (
+            ChatMessage.query
+            .filter(ChatMessage.thread_id == thread_id, ChatMessage.user_id.is_(None))
+            .order_by(ChatMessage.created_at.desc())
+            .first()
+        )
+        conversations.append({
+            "thread_id": thread_id,
+            "title": (first_user_msg.content or "").strip()[:70] if first_user_msg else "Conversa sem mensagens",
+            "last_preview": (last_msg.content or "").strip()[:100] if last_msg else "",
+            "last_sender": last_msg.sender if last_msg else "",
+            "last_at": row.last_at,
+            "msg_count": row.msg_count,
+        })
+
+    # Paginação simples
+    total_pages = max(1, (total_threads + per_page - 1) // per_page)
+
+    return render_template(
+        "admin/conversations.html",
+        conversations=conversations,
+        page=page,
+        total_pages=total_pages,
+        total_threads=total_threads,
+    )
+
+
+@blueprint.route("/admin/conversations/<thread_id>")
+@login_required
+@admin_required
+def admin_conversation_detail(thread_id):
+    """Exibe todas as mensagens de uma conversa externa específica."""
+    messages = (
+        ChatMessage.query
+        .filter(ChatMessage.thread_id == thread_id, ChatMessage.user_id.is_(None))
+        .order_by(ChatMessage.created_at.asc(), ChatMessage.id.asc())
+        .all()
+    )
+    if not messages:
+        flash("Conversa não encontrada ou pertence a um usuário autenticado.", "warning")
+        return redirect(url_for("authentication_blueprint.admin_conversations"))
+
+    first_user_msg = next((m for m in messages if m.sender == "user"), None)
+    title = (first_user_msg.content or "").strip()[:70] if first_user_msg else thread_id
+
+    return render_template(
+        "admin/conversation_detail.html",
+        messages=messages,
+        thread_id=thread_id,
+        title=title,
+    )
