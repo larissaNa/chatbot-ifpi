@@ -56,11 +56,12 @@
     .prod-topbar-name { font-size: .9rem; font-weight: 700; color: #1f2937; }
     .prod-topbar-sub  { font-size: .72rem; color: #6b7280; }
 
-    /* prod-content ocupa EXATAMENTE o espaço restante abaixo do topbar */
+    /* prod-content ocupa o espaço restante abaixo do topbar e rola se necessário */
     .prod-content {
       flex: 1;
-      min-height: 0;       /* essencial para que flex filhos respeitem overflow */
-      overflow: hidden;
+      min-height: 0;
+      overflow-y: auto;   /* scroll vertical quando o conteúdo for maior que o espaço */
+      -webkit-overflow-scrolling: touch;
       position: relative;
     }
   </style>
