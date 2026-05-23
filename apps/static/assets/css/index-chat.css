@@ -30,13 +30,28 @@
  }
 
  /*
-  * Modo prod: .prod-content já tem a altura exata resolvida via flexbox
-  * (prod-shell 100dvh − topbar 52px). Usar height:100% elimina qualquer
-  * discrepância entre visualViewport.height e 100dvh/100vh.
+  * Modo prod: prod-content agora faz o scroll. chat-page e chat-container
+  * usam min-height:100% para preencher o espaço disponível; se o conteúdo
+  * for maior, prod-content rola verticalmente e o footer sticky gruda no fundo.
   */
  body.prod-layout .chat-page {
-  height: 100% !important;
+  height: auto !important;
+  min-height: 100% !important;
   padding-bottom: 0 !important;
+  overflow: visible !important;
+ }
+
+ body.prod-layout .chat-container {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow: visible !important;
+ }
+
+ /* Footer sticky: permanece colado na borda inferior de prod-content
+    independente de qualquer discrepância de cálculo de altura */
+ body.prod-layout .chat-footer {
+  position: sticky !important;
+  bottom: 0 !important;
  }
 
 .sidebar-chat-item {
