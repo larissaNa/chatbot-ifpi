@@ -609,19 +609,41 @@ body.app.chat-layout-page {
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 991.98px) {
   .chat-page {
+    /* Desconta navbar em qualquer largura — prod (52px) ou dev (0px) */
+    height: calc(var(--real-vh, 100dvh) - var(--navbar-height, 0px));
     padding-bottom: 0;
+    overflow: hidden;
   }
 
   .chat-container {
+    height: 100%;
     max-width: none;
     border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .chat-body {
-    padding: 22px 16px 120px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* padding-bottom menor: o footer usa flex e ocupa seu espaço naturalmente */
+    padding: 22px 16px 20px;
   }
 
   .chat-footer {
+    flex: 0 0 auto;
+    min-height: 60px;
     padding: 14px 14px calc(14px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -645,10 +667,15 @@ body.app.chat-layout-page {
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 767.98px) {
 
-  /* ── Viewport: usa --real-vh (atualizado via JS quando teclado abre) ── */
+  /* ── Viewport: usa --real-vh menos a altura do topbar/navbar ── */
   .chat-page {
-    /* Fallback em cascata: real-vh > dvh > svh > vh */
-    height: var(--real-vh, 100dvh);
+    /*
+     * --real-vh  = altura visual real (JS atualiza quando teclado abre)
+     * --navbar-height = 52px em prod, 0px em dev
+     * Resultado: chat-page fica EXATAMENTE do tamanho do prod-content,
+     * sem vazar e sem ser cortado pelo overflow:hidden do pai.
+     */
+    height: calc(var(--real-vh, 100dvh) - var(--navbar-height, 0px));
     padding-bottom: 0;
     overflow: hidden;
   }
