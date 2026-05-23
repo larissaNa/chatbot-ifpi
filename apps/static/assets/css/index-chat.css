@@ -30,28 +30,54 @@
  }
 
  /*
-  * Modo prod: prod-content agora faz o scroll. chat-page e chat-container
-  * usam min-height:100% para preencher o espaço disponível; se o conteúdo
-  * for maior, prod-content rola verticalmente e o footer sticky gruda no fundo.
-  */
+  * ── Modo prod: footer FIXO na base da tela ─────────────────────────────
+  *
+  * Padrão mobile-first para chat:
+  *   1) chat-page / chat-container: height:100% — preenchem prod-content
+  *   2) chat-main: flex:1 — ocupa todo o espaço acima do footer
+  *   3) chat-footer: position:fixed bottom:0 — SEMPRE visível, fora do fluxo
+  *   4) chat-container padding-bottom: reserva espaço para o footer fixo
+  *      para a última mensagem não ficar escondida atrás dele
+  *
+  * Dois scrolls independentes:
+  *   • Scroll 1 → chat-body (mensagens) — overflow-y:auto interno
+  *   • Scroll 2 → prod-content (página) — overflow-y:auto no pai
+  *     garante acesso caso o layout extrapole alguns pixels
+  * ────────────────────────────────────────────────────────────────────── */
  body.prod-layout .chat-page {
-  height: auto !important;
-  min-height: 100% !important;
+  height: 100% !important;
   padding-bottom: 0 !important;
   overflow: visible !important;
  }
 
  body.prod-layout .chat-container {
-  height: auto !important;
-  min-height: 100% !important;
+  height: 100% !important;
   overflow: visible !important;
+  /* Espaço reservado para o footer fixo (≈ 72-88px) */
+  padding-bottom: 88px !important;
+  box-sizing: border-box !important;
  }
 
- /* Footer sticky: permanece colado na borda inferior de prod-content
-    independente de qualquer discrepância de cálculo de altura */
+ body.prod-layout .chat-main {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+ }
+
+ /*
+  * Footer fixo: flutua sobre o conteúdo, sempre na base do viewport visível.
+  * Funciona independente de 100dvh vs 100vh vs visualViewport.height.
+  * env(safe-area-inset-bottom) cobre a home bar do iPhone.
+  */
  body.prod-layout .chat-footer {
-  position: sticky !important;
+  position: fixed !important;
   bottom: 0 !important;
+  bottom: env(safe-area-inset-bottom, 0px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
  }
 
 .sidebar-chat-item {
