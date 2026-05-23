@@ -2,25 +2,67 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>IFPIA – {% block title %}Chatbot{% endblock %}</title>
   <link type="text/css" href="{{ config.ASSETS_ROOT }}/css/index.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   {% block stylesheets %}{% endblock %}
   <style>
-    /* Layout limpo sem sidebar/navbar para usuários externos */
-    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #F8FAFC; }
-    .prod-shell { display: flex; flex-direction: column; height: 100vh; }
+    /* ── Layout prod: sem sidebar/navbar para usuários externos ── */
+    :root {
+      --prod-topbar-h: 52px;
+      /* Informa ao index-chat.css qual é a altura do topo */
+      --navbar-height: calc(var(--prod-topbar-h) + env(safe-area-inset-top, 0px));
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html {
+      height: 100%;
+      /* Fallback para Safari iOS que ainda não suporta 100dvh em versões antigas */
+      height: -webkit-fill-available;
+    }
+    body {
+      margin: 0; padding: 0;
+      height: 100%;
+      min-height: 100dvh;
+      min-height: -webkit-fill-available;
+      overflow: hidden;
+      background: #F8FAFC;
+    }
+
+    .prod-shell {
+      display: flex;
+      flex-direction: column;
+      /* 100dvh = viewport dinâmico (exclui teclado virtual no Android) */
+      height: 100dvh;
+      height: 100vh; /* fallback para browsers sem suporte a dvh */
+      min-height: -webkit-fill-available;
+    }
+
     .prod-topbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 20px; height: 52px; background: #fff;
-      border-bottom: 1px solid rgba(15,23,42,.08); flex-shrink: 0;
+      padding: 0 20px;
+      /* Compensa notch/safe-area no topo (iPhone) */
+      padding-top: env(safe-area-inset-top, 0px);
+      height: var(--prod-topbar-h);
+      min-height: var(--prod-topbar-h);
+      background: #fff;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+      flex-shrink: 0;
+      z-index: 10;
     }
     .prod-topbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
     .prod-topbar-brand img { height: 28px; }
     .prod-topbar-name { font-size: .9rem; font-weight: 700; color: #1f2937; }
     .prod-topbar-sub  { font-size: .72rem; color: #6b7280; }
-    .prod-content { flex: 1; overflow: hidden; }
+
+    /* prod-content ocupa EXATAMENTE o espaço restante abaixo do topbar */
+    .prod-content {
+      flex: 1;
+      min-height: 0;       /* essencial para que flex filhos respeitem overflow */
+      overflow: hidden;
+      position: relative;
+    }
   </style>
 </head>
 <body>

@@ -604,9 +604,12 @@ body.app.chat-layout-page {
   font-size: 0.78rem;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   TABLET (≤ 991px)
+   ══════════════════════════════════════════════════════════════ */
 @media (max-width: 991.98px) {
   .chat-page {
-    padding-bottom: 10px;
+    padding-bottom: 0;
   }
 
   .chat-container {
@@ -619,7 +622,7 @@ body.app.chat-layout-page {
   }
 
   .chat-footer {
-    padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    padding: 14px 14px calc(14px + env(safe-area-inset-bottom, 0px));
   }
 
   .chat-input-shell {
@@ -633,6 +636,174 @@ body.app.chat-layout-page {
 
   .chat-bubble {
     max-width: 100%;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE PHONES (≤ 767px)
+   Prioridade: campo de envio SEMPRE visível, teclado virtual OK
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 767.98px) {
+
+  /* ── Viewport: usa --real-vh (atualizado via JS quando teclado abre) ── */
+  .chat-page {
+    /* Fallback em cascata: real-vh > dvh > svh > vh */
+    height: var(--real-vh, 100dvh);
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+
+  /* ── Container principal: flex-column que não vaza ── */
+  .chat-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 0;
+  }
+
+  .chat-main {
+    flex: 1;
+    min-height: 0;   /* CRÍTICO: sem isso o flex-child ignora overflow */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Área de mensagens: scroll vertical, sem clips ── */
+  .chat-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;  /* momentum scroll no iOS */
+    overscroll-behavior-y: contain;
+    /* Padding menor — o footer abaixo já cuida do espaço */
+    padding: 16px 14px 24px;
+  }
+
+  /* ── Footer: sempre visível, grudado no fundo, acima do teclado ── */
+  .chat-footer {
+    flex: 0 0 auto;           /* não encolhe nem cresce */
+    min-height: 60px;
+    /* safe-area-inset-bottom = espaço da "home bar" do iPhone */
+    padding: 10px 12px max(12px, env(safe-area-inset-bottom, 12px));
+    background: rgba(248, 250, 252, 0.98);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    /* z-index garante que fique acima de qualquer scroll */
+    z-index: 20;
+  }
+
+  /* ── Campo de texto: font-size 16px previne zoom automático no iOS ── */
+  .chat-input {
+    font-size: 16px;   /* OBRIGATÓRIO: iOS faz zoom se < 16px */
+    min-height: 24px;
+  }
+
+  .chat-input-shell {
+    padding: 10px 10px 10px 14px;
+    border-radius: 16px;
+    gap: 8px;
+  }
+
+  /* ── Botão enviar: tamanho de toque confortável (≥ 44px recomendado) ── */
+  .chat-send {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    touch-action: manipulation; /* sem delay de 300ms no tap */
+  }
+
+  /* Esconde dica de atalho (sem sentido em mobile) */
+  .chat-hint {
+    display: none;
+  }
+
+  /* ── Mensagens ── */
+  .chat-message {
+    width: 100%;
+    margin-bottom: 12px;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .chat-bubble {
+    max-width: 88%;
+    font-size: 0.93rem;
+    padding: 11px 14px;
+    border-radius: 16px;
+    line-height: 1.55;
+  }
+
+  /* Avatar menor */
+  .chat-avatar {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  /* ── Tela de boas-vindas ── */
+  .welcome-message {
+    padding: 24px 18px;
+  }
+
+  .welcome-message h1 {
+    font-size: clamp(1.3rem, 5.5vw, 1.75rem);
+    margin-bottom: 12px;
+  }
+
+  /* ── Chips de fonte: scroll horizontal em vez de quebrar linha ── */
+  .bot-sources-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .bot-sources-chips::-webkit-scrollbar { display: none; }
+
+  .bot-source-name {
+    max-width: 58vw;
+  }
+
+  /* ── Estado inicial: centraliza a caixa de input ── */
+  .chat-container.initial-state .chat-footer {
+    padding: 10px 12px max(16px, env(safe-area-inset-bottom, 16px));
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TELAS MUITO PEQUENAS (≤ 380px — iPhone SE 1ª geração, etc.)
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 380px) {
+  .chat-footer {
+    padding: 8px 10px max(10px, env(safe-area-inset-bottom, 10px));
+    min-height: 56px;
+  }
+
+  .chat-input-shell {
+    padding: 8px 8px 8px 12px;
+    gap: 6px;
+  }
+
+  .chat-send {
+    width: 38px;
+    height: 38px;
+  }
+
+  /* Mantém 16px mesmo em tela pequena para não causar zoom no iOS */
+  .chat-input { font-size: 16px; }
+
+  .chat-bubble {
+    font-size: 0.88rem;
+    padding: 10px 12px;
+    max-width: 92%;
+  }
+
+  .welcome-message h1 {
+    font-size: clamp(1.15rem, 5vw, 1.4rem);
   }
 }
 
