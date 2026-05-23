@@ -29,6 +29,16 @@
   overflow: hidden;
  }
 
+ /*
+  * Modo prod: .prod-content já tem a altura exata resolvida via flexbox
+  * (prod-shell 100dvh − topbar 52px). Usar height:100% elimina qualquer
+  * discrepância entre visualViewport.height e 100dvh/100vh.
+  */
+ body.prod-layout .chat-page {
+  height: 100% !important;
+  padding-bottom: 0 !important;
+ }
+
 .sidebar-chat-item {
   margin-top: 4px;
 }
