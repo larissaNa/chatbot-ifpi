@@ -9,19 +9,45 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link type="text/css" href="{{ config.ASSETS_ROOT }}/css/index-chat.css" rel="stylesheet">
-<!-- Viewport dinâmico: mantém --real-vh atualizado quando o teclado virtual abre/fecha -->
+<!-- Viewport dinâmico: mantém --real-vh e --navbar-height atualizados -->
 <script>
 (function () {
+  // Atualiza --real-vh com a altura visual real do viewport
+  // (exclui teclado virtual no Android/iOS)
   function updateVh() {
     var h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
     document.documentElement.style.setProperty('--real-vh', h + 'px');
   }
+
+  // Mede o offset real do .chat-page em relação ao topo do viewport.
+  // Isso funciona em AMBOS os modos:
+  //   prod  → .chat-page começa logo abaixo do topbar (≈52px)
+  //   admin → .chat-page começa abaixo da navbar admin + padding (≈80-90px)
+  // Sobrescreve --navbar-height somente se medido > 0 para não quebrar o fallback.
+  function measureNavbarHeight() {
+    var chatPage = document.querySelector('.chat-page');
+    if (!chatPage) return;
+    var top = Math.round(chatPage.getBoundingClientRect().top);
+    if (top > 0) {
+      document.documentElement.style.setProperty('--navbar-height', top + 'px');
+    }
+  }
+
   updateVh();
+
   window.addEventListener('resize', updateVh);
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', updateVh);
     window.visualViewport.addEventListener('scroll', updateVh);
   }
+
+  // Mede após o layout ser calculado (double rAF garante que o browser
+  // já aplicou todos os estilos e posicionou os elementos)
+  requestAnimationFrame(function () {
+    requestAnimationFrame(measureNavbarHeight);
+  });
+  // Fallback: garante nova medição se o load completo demorar
+  window.addEventListener('load', measureNavbarHeight);
 })();
 </script>
 
