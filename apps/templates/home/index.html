@@ -9,6 +9,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link type="text/css" href="{{ config.ASSETS_ROOT }}/css/index-chat.css" rel="stylesheet">
+<!-- Viewport dinâmico: mantém --real-vh atualizado quando o teclado virtual abre/fecha -->
+<script>
+(function () {
+  function updateVh() {
+    var h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+    document.documentElement.style.setProperty('--real-vh', h + 'px');
+  }
+  updateVh();
+  window.addEventListener('resize', updateVh);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateVh);
+    window.visualViewport.addEventListener('scroll', updateVh);
+  }
+})();
+</script>
 
 <div class="chat-page">
   <div id="chat-container" class="chat-container initial-state" role="application" aria-label="Chatbot IFPI">
