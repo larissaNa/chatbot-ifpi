@@ -10,6 +10,39 @@ from apps.core.chat.prompts import get_feedback_rewrite_prompt, get_rag_answer_p
 
 NOT_FOUND_ANSWER = "Não encontrei essa informação nos documentos oficiais do IFPI."
 
+# Padrões de "soft not found": respostas que são essencialmente "não encontrei" mas
+# o LLM ainda acrescentou explicação extra, quebrando a igualdade exata.
+# Detectamos pelo início da resposta para escalar para a web normalmente.
+import re as _re_nf
+_SOFT_NOT_FOUND_RE = _re_nf.compile(
+    r"^não\s+encontr[ei]\b"                          # "Não encontrei uma lista..."
+    r"|^não\s+(?:há|existe|consta)\s+(?:informação|lista|dado|registro|nenhum)"
+    r"|^os?\s+documentos?\s+(?:fornecidos?\s+)?não\s+(?:cont[eé]m|incluem|apresentam|detalham|possuem)"
+    r"|^não\s+foi\s+possível\s+(?:encontrar|localizar|identificar)"
+    r"|^não\s+tenho\s+(?:essa\s+informação|informações?\s+sobre)",
+    _re_nf.IGNORECASE,
+)
+
+
+def _is_not_found_answer(answer: str) -> bool:
+    """
+    Retorna True quando a resposta do LLM é essencialmente 'não encontrei',
+    seja a frase exata NOT_FOUND_ANSWER ou uma variante com explicação extra.
+    Usado para garantir escalada para a busca web nesses casos.
+    """
+    a = (answer or "").strip()
+    if not a:
+        return True
+    # Correspondência exata — caminho principal
+    if a == NOT_FOUND_ANSWER:
+        return True
+    # Resposta que começa com NOT_FOUND_ANSWER mas tem texto adicional (ex: "...Os documentos tratam de...")
+    if a.startswith(NOT_FOUND_ANSWER):
+        return True
+    # Padrões de "soft not found" — o LLM não usou a frase exata mas expressou o mesmo
+    return bool(_SOFT_NOT_FOUND_RE.match(a))
+
+
 _llm = None
 
 def _get_llm():
@@ -648,7 +681,10 @@ def consulta_institucional(
     )
 
     answer = (answer or "").strip()
-    if answer == NOT_FOUND_ANSWER:
+    if _is_not_found_answer(answer):
+        # LLM sinalizou "não encontrado" — com frase exata ou variante com explicação extra.
+        # Tentamos retries com queries alternativas antes de escalar para a web.
+
         # Retry 1: a query reescrita pode ter sido específica demais e perdeu o documento correto.
         # Tentamos novamente com a pergunta original (sem reescrita de contexto).
         retry_queries: list[str] = []
@@ -663,7 +699,7 @@ def consulta_institucional(
             retry_queries.append(keywords)
 
         for i, retry_q in enumerate(retry_queries, start=1):
-            print(f"[RAG][RETRY {i}] LLM retornou NOT_FOUND. Tentando com query alternativa: '{retry_q[:80]}'")
+            print(f"[RAG][RETRY {i}] LLM sinalizou NOT_FOUND. Tentando com query alternativa: '{retry_q[:80]}'")
             retrieval2 = retrieve_with_threshold(retry_q, k=k, score_threshold=score_threshold)
             if retrieval2.get("status") == "success":
                 docs2 = retrieval2.get("docs") or []
@@ -680,7 +716,7 @@ def consulta_institucional(
                     }
                 )
                 answer2 = (answer2 or "").strip()
-                if answer2 and answer2 != NOT_FOUND_ANSWER:
+                if answer2 and not _is_not_found_answer(answer2):
                     print(f"[RAG][RETRY {i}] Retry bem-sucedido.")
                     return {
                         "status": "success",
