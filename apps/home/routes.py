@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 from apps.home import blueprint
-from flask import current_app, redirect, render_template, request, url_for
+from flask import current_app, redirect, render_template, request, session, url_for
 from flask_login import current_user
 from jinja2 import TemplateNotFound
 
@@ -11,6 +11,15 @@ def index():
     # Em dev, exige autenticação.
     if current_app.config.get('APP_ENV') != 'prod' and not current_user.is_authenticated:
         return redirect(url_for('authentication_blueprint.login'))
+
+    # Em prod, cada carregamento de página inicia uma sessão limpa:
+    # o thread_id anterior é descartado, apagando memória e histórico.
+    # Enquanto a página estiver aberta (sem reload) o histórico é mantido.
+    if current_app.config.get('APP_ENV') == 'prod':
+        session.pop('thread_id', None)
+        session.pop('chat_thread_ids', None)
+        session.modified = True
+
     return render_template('home/index.html', segment='index')
 
 

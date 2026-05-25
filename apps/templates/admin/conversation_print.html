@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conversa — {{ title }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 13px;
+      color: #1e293b;
+      background: #fff;
+      padding: 32px 40px;
+    }
+
+    /* Barra de ações — oculta ao imprimir */
+    .print-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .btn-print, .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      text-decoration: none;
+    }
+    .btn-print {
+      background: #4f46e5;
+      color: #fff;
+    }
+    .btn-back {
+      background: #f1f5f9;
+      color: #374151;
+      border-color: #e2e8f0;
+    }
+
+    /* Cabeçalho */
+    .print-header {
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .print-header h1 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+    .print-meta {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    /* Mensagens */
+    .messages { display: flex; flex-direction: column; gap: 14px; }
+
+    .msg { display: flex; gap: 10px; align-items: flex-start; }
+    .msg.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .avatar-user { background: #dbeafe; color: #1d4ed8; }
+    .avatar-bot  { background: #ede9fe; color: #6d28d9; }
+
+    .msg-wrap { display: flex; flex-direction: column; max-width: 72%; }
+    .msg.user .msg-wrap { align-items: flex-end; }
+
+    .bubble {
+      padding: 9px 13px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.user .bubble {
+      background: #2563eb;
+      color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+    .msg.bot .bubble {
+      background: #f1f5f9;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      border-bottom-left-radius: 3px;
+    }
+
+    .ts {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 3px;
+    }
+
+    .date-sep {
+      text-align: center;
+      font-size: 10px;
+      color: #94a3b8;
+      margin: 6px 0;
+    }
+
+    .sender-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 2px;
+    }
+
+    /* Print */
+    @media print {
+      .print-actions { display: none !important; }
+      body { padding: 16px 20px; }
+      .bubble { border: 1px solid #e2e8f0 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="print-actions">
+    <button class="btn-print" onclick="window.print()">&#x1F5A8; Imprimir / Salvar PDF</button>
+    <a class="btn-back" href="javascript:history.back()">&#8592; Voltar</a>
+  </div>
+
+  <div class="print-header">
+    <h1>{{ title }}</h1>
+    <div class="print-meta">
+      Thread: {{ thread_id }} &nbsp;·&nbsp;
+      {{ messages|length }} mensagem{{ 's' if messages|length != 1 else '' }}
+      {% if messages and messages[0].created_at %}
+        &nbsp;·&nbsp; Início: {{ messages[0].created_at.strftime('%d/%m/%Y %H:%M') }}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="messages">
+    {% for msg in messages %}
+
+    {% if loop.first or (messages[loop.index0 - 1].created_at and msg.created_at and
+        (msg.created_at - messages[loop.index0 - 1].created_at).total_seconds() > 3600) %}
+    <div class="date-sep">— {{ msg.created_at.strftime('%d/%m/%Y') if msg.created_at else '' }} —</div>
+    {% endif %}
+
+    <div class="msg {{ msg.sender }}">
+      <div class="avatar avatar-{{ msg.sender }}">
+        {{ 'U' if msg.sender == 'user' else 'B' }}
+      </div>
+      <div class="msg-wrap">
+        <div class="sender-label">{{ 'Usuário' if msg.sender == 'user' else 'Piazinho' }}</div>
+        <div class="bubble">{{ msg.content }}</div>
+        {% if msg.created_at %}
+        <div class="ts">{{ msg.created_at.strftime('%H:%M') }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% endfor %}
+  </div>
+
+</body>
+</html>

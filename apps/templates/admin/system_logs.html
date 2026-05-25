@@ -1,0 +1,181 @@
+{% extends "layouts/base.html" %}
+{% block title %} Logs do Sistema {% endblock title %}
+
+{% block stylesheets %}
+<style>
+  .logs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .logs-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .logs-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: .82rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn-export { background: #ecfdf5; color: #065f46; border-color: #d1fae5; }
+  .btn-export:hover { background: #d1fae5; color: #065f46; text-decoration: none; }
+  .btn-clear  { background: #fff1f2; color: #9f1239; border-color: #fee2e2; }
+  .btn-clear:hover  { background: #fee2e2; }
+  .btn-refresh { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .btn-refresh:hover { background: #dbeafe; }
+
+  .log-status {
+    font-size: .78rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .log-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    display: inline-block;
+    animation: blink 1.5s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .log-box {
+    background: #0f172a;
+    color: #94a3b8;
+    border-radius: 10px;
+    padding: 16px 18px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: .78rem;
+    line-height: 1.7;
+    height: calc(100vh - 260px);
+    min-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .log-line { display: block; border-bottom: 1px solid rgba(255,255,255,.03); padding: 1px 0; }
+  .log-line:hover { background: rgba(255,255,255,.04); }
+
+  /* Colore por nível */
+  .log-line.lvl-error  { color: #f87171; }
+  .log-line.lvl-warn   { color: #fbbf24; }
+  .log-line.lvl-success{ color: #4ade80; }
+  .log-line.lvl-info   { color: #7dd3fc; }
+  .log-line.lvl-rag    { color: #c4b5fd; }
+  .log-line.lvl-web    { color: #67e8f9; }
+
+  .log-count {
+    font-size: .75rem;
+    color: #64748b;
+    margin-top: 8px;
+    text-align: right;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="logs-header">
+    <div>
+      <h3><i class="ti-server" style="font-size:1rem;margin-right:6px;color:#6366f1;"></i>Logs do Sistema</h3>
+      <div class="log-status">
+        <span class="log-dot"></span>
+        Atualizando automaticamente a cada 5 segundos
+      </div>
+    </div>
+    <div class="logs-actions">
+      <button class="btn-action btn-refresh" onclick="fetchLogs()">
+        <i class="ti-reload"></i> Atualizar agora
+      </button>
+      <a class="btn-action btn-export"
+         href="{{ url_for('authentication_blueprint.admin_system_logs_export') }}">
+        <i class="ti-export"></i> Exportar .txt
+      </a>
+      <button class="btn-action btn-clear" onclick="clearDisplay()">
+        <i class="ti-trash"></i> Limpar tela
+      </button>
+    </div>
+  </div>
+
+  <div class="log-box" id="logBox">
+    {% for line in lines %}
+    <span class="log-line">{{ line }}</span>
+    {% endfor %}
+  </div>
+  <div class="log-count" id="logCount">{{ lines|length }} linha(s) carregadas</div>
+
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+(function () {
+  var box = document.getElementById('logBox');
+  var count = document.getElementById('logCount');
+  var autoScroll = true;
+  var intervalId = null;
+
+  function lineClass(text) {
+    var t = text.toLowerCase();
+    if (t.includes('[error]') || t.includes('erro') || t.includes('exception') || t.includes('traceback')) return 'lvl-error';
+    if (t.includes('[warn') || t.includes('warning'))  return 'lvl-warn';
+    if (t.includes('[rag]'))  return 'lvl-rag';
+    if (t.includes('[web]'))  return 'lvl-web';
+    if (t.includes('sucesso') || t.includes('success') || t.includes('concluíd')) return 'lvl-success';
+    if (t.includes('[info]') || t.includes('carregad') || t.includes('conectad')) return 'lvl-info';
+    return '';
+  }
+
+  function renderLines(lines) {
+    box.innerHTML = '';
+    lines.forEach(function (line) {
+      var span = document.createElement('span');
+      span.className = 'log-line ' + lineClass(line);
+      span.textContent = line;
+      box.appendChild(span);
+    });
+    count.textContent = lines.length + ' linha(s) carregadas';
+    if (autoScroll) box.scrollTop = box.scrollHeight;
+  }
+
+  window.fetchLogs = function () {
+    fetch("{{ url_for('authentication_blueprint.admin_system_logs_data') }}?n=500")
+      .then(function (r) { return r.json(); })
+      .then(function (data) { renderLines(data.lines || []); })
+      .catch(function () {});
+  };
+
+  window.clearDisplay = function () {
+    box.innerHTML = '';
+    count.textContent = '0 linha(s) — tela limpa (não apaga os logs do servidor)';
+  };
+
+  // Pausa auto-scroll quando usuário rola para cima
+  box.addEventListener('scroll', function () {
+    autoScroll = box.scrollTop + box.clientHeight >= box.scrollHeight - 40;
+  });
+
+  // Busca imediatamente para colorizar + auto-refresh a cada 5 segundos
+  fetchLogs();
+  intervalId = setInterval(fetchLogs, 5000);
+})();
+</script>
+{% endblock javascripts %}
