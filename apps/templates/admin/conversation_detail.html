@@ -151,6 +151,21 @@
         {{ messages|length }} mensagen{{ 's' if messages|length != 1 else '' }}
       </span>
     </div>
+    <div style="display:flex;gap:8px;flex-shrink:0;align-items:flex-start;">
+      <a href="{{ url_for('authentication_blueprint.admin_conversation_print', thread_id=thread_id) }}"
+         target="_blank"
+         style="display:inline-flex;align-items:center;gap:6px;font-size:.83rem;padding:5px 12px;border-radius:6px;border:1px solid #d1fae5;background:#ecfdf5;color:#065f46;text-decoration:none;white-space:nowrap;">
+        <i class="ti-export"></i> Exportar PDF
+      </a>
+      <form method="POST"
+            action="{{ url_for('authentication_blueprint.admin_conversation_delete', thread_id=thread_id) }}"
+            onsubmit="return confirm('Apagar esta conversa permanentemente?')">
+        <button type="submit"
+                style="display:inline-flex;align-items:center;gap:6px;font-size:.83rem;padding:5px 12px;border-radius:6px;border:1px solid #fee2e2;background:#fff1f2;color:#9f1239;cursor:pointer;white-space:nowrap;">
+          <i class="ti-trash"></i> Apagar
+        </button>
+      </form>
+    </div>
   </div>
 
   <div class="cd-messages">

@@ -22,6 +22,7 @@ from apps.authentication import (
     DocumentoOficial,
     DocumentoVersao,
     LogProcessamento,
+    UserMemory,
 )
 from apps.core.documents.services.revision_orchestrator import executar_revisao_documento
 from apps.core.chat.services.serialization_service import build_conversation_summaries
@@ -390,4 +391,82 @@ def admin_conversation_detail(thread_id):
         messages=messages,
         thread_id=thread_id,
         title=title,
+    )
+
+
+@blueprint.route("/admin/conversations/<thread_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def admin_conversation_delete(thread_id):
+    """Apaga todos os registros de uma conversa externa."""
+    UserMemory.query.filter_by(thread_id=thread_id).delete()
+    ChatFeedback.query.filter_by(thread_id=thread_id).delete()
+    ChatMessage.query.filter(
+        ChatMessage.thread_id == thread_id,
+        ChatMessage.user_id.is_(None),
+    ).delete()
+    db.session.commit()
+    flash("Conversa apagada com sucesso.", "success")
+    return redirect(url_for("authentication_blueprint.admin_conversations"))
+
+
+@blueprint.route("/admin/conversations/<thread_id>/print")
+@login_required
+@admin_required
+def admin_conversation_print(thread_id):
+    """Versão para impressão/PDF de uma conversa."""
+    messages = (
+        ChatMessage.query
+        .filter(ChatMessage.thread_id == thread_id, ChatMessage.user_id.is_(None))
+        .order_by(ChatMessage.created_at.asc(), ChatMessage.id.asc())
+        .all()
+    )
+    if not messages:
+        flash("Conversa não encontrada.", "warning")
+        return redirect(url_for("authentication_blueprint.admin_conversations"))
+
+    first_user_msg = next((m for m in messages if m.sender == "user"), None)
+    title = (first_user_msg.content or "").strip()[:70] if first_user_msg else thread_id
+
+    return render_template(
+        "admin/conversation_print.html",
+        messages=messages,
+        thread_id=thread_id,
+        title=title,
+    )
+
+
+@blueprint.route("/admin/system-logs")
+@login_required
+@admin_required
+def admin_system_logs():
+    """Visualizador de logs do sistema em tempo real."""
+    from apps.core.log_buffer import get_lines
+    lines = get_lines(500)
+    return render_template("admin/system_logs.html", lines=lines)
+
+
+@blueprint.route("/admin/system-logs/data")
+@login_required
+@admin_required
+def admin_system_logs_data():
+    """Endpoint JSON com as últimas linhas de log (para auto-refresh via fetch)."""
+    from flask import jsonify
+    from apps.core.log_buffer import get_lines
+    n = min(int(request.args.get("n", 500)), 2000)
+    return jsonify({"lines": get_lines(n)})
+
+
+@blueprint.route("/admin/system-logs/export")
+@login_required
+@admin_required
+def admin_system_logs_export():
+    """Exporta os logs como arquivo .txt."""
+    from flask import Response
+    from apps.core.log_buffer import get_lines
+    content = "\n".join(get_lines(2000))
+    return Response(
+        content,
+        mimetype="text/plain; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=sistema_logs.txt"},
     )

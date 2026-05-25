@@ -7,6 +7,10 @@ import os
 import time
 
 from flask import Flask
+
+# Instala interceptor de logs antes de qualquer print do sistema
+from apps.core.log_buffer import install as _install_log_buffer
+_install_log_buffer()
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from importlib import import_module
