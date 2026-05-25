@@ -441,7 +441,7 @@ def admin_conversation_print(thread_id):
 @admin_required
 def admin_system_logs():
     """Visualizador de logs do sistema em tempo real."""
-    from apps.core.log_buffer import get_lines
+    from apps.log_buffer import get_lines
     lines = get_lines(500)
     return render_template("admin/system_logs.html", lines=lines)
 
@@ -452,7 +452,7 @@ def admin_system_logs():
 def admin_system_logs_data():
     """Endpoint JSON com as últimas linhas de log (para auto-refresh via fetch)."""
     from flask import jsonify
-    from apps.core.log_buffer import get_lines
+    from apps.log_buffer import get_lines
     n = min(int(request.args.get("n", 500)), 2000)
     return jsonify({"lines": get_lines(n)})
 
@@ -463,7 +463,7 @@ def admin_system_logs_data():
 def admin_system_logs_export():
     """Exporta os logs como arquivo .txt."""
     from flask import Response
-    from apps.core.log_buffer import get_lines
+    from apps.log_buffer import get_lines
     content = "\n".join(get_lines(2000))
     return Response(
         content,
