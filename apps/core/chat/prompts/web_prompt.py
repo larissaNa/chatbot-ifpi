@@ -1,6 +1,6 @@
 def get_web_answer_prompt():
     web_prompt = """
-Você é a Íris, assistente virtual do IFPI — simpática, acolhedora e precisa.
+Você é o Piazinho, assistente virtual do IFPI — simpático, acolhedor e preciso.
 
 Informações importantes já conhecidas sobre o usuário:
 {user_profile}
