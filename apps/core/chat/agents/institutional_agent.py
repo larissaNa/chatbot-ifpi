@@ -10,6 +10,39 @@ from apps.core.chat.prompts import get_feedback_rewrite_prompt, get_rag_answer_p
 
 NOT_FOUND_ANSWER = "Não encontrei essa informação nos documentos oficiais do IFPI."
 
+# Padrões de "soft not found": respostas que são essencialmente "não encontrei" mas
+# o LLM ainda acrescentou explicação extra, quebrando a igualdade exata.
+# Detectamos pelo início da resposta para escalar para a web normalmente.
+import re as _re_nf
+_SOFT_NOT_FOUND_RE = _re_nf.compile(
+    r"^não\s+encontr[ei]\b"                          # "Não encontrei uma lista..."
+    r"|^não\s+(?:há|existe|consta)\s+(?:informação|lista|dado|registro|nenhum)"
+    r"|^os?\s+documentos?\s+(?:fornecidos?\s+)?não\s+(?:cont[eé]m|incluem|apresentam|detalham|possuem)"
+    r"|^não\s+foi\s+possível\s+(?:encontrar|localizar|identificar)"
+    r"|^não\s+tenho\s+(?:essa\s+informação|informações?\s+sobre)",
+    _re_nf.IGNORECASE,
+)
+
+
+def _is_not_found_answer(answer: str) -> bool:
+    """
+    Retorna True quando a resposta do LLM é essencialmente 'não encontrei',
+    seja a frase exata NOT_FOUND_ANSWER ou uma variante com explicação extra.
+    Usado para garantir escalada para a busca web nesses casos.
+    """
+    a = (answer or "").strip()
+    if not a:
+        return True
+    # Correspondência exata — caminho principal
+    if a == NOT_FOUND_ANSWER:
+        return True
+    # Resposta que começa com NOT_FOUND_ANSWER mas tem texto adicional (ex: "...Os documentos tratam de...")
+    if a.startswith(NOT_FOUND_ANSWER):
+        return True
+    # Padrões de "soft not found" — o LLM não usou a frase exata mas expressou o mesmo
+    return bool(_SOFT_NOT_FOUND_RE.match(a))
+
+
 _llm = None
 
 def _get_llm():
@@ -154,27 +187,64 @@ _ENTITY_STOP = frozenset({
 })
 
 
-def _extract_entity_names(question: str) -> list[str]:
+def _extract_professor_names(question: str) -> list[str]:
     """
-    Extrai nomes próprios (prováveis nomes de pessoas, disciplinas específicas, etc.)
-    da pergunta para uso em busca textual direta.
+    Extrai APENAS nomes de professores da pergunta — palavras que aparecem
+    logo após "professor(a)", "prof." ou "docente".
 
-    Estratégias:
-    1. Palavra(s) imediatamente após "professor(a)" / "prof." / "docente"
-    2. Palavras capitalizadas na query original (usuário digitou com maiúscula)
-    3. Palavras não-stop com >= 4 letras que aparecem após indicadores semânticos
+    Usada exclusivamente para injeção por busca textual, evitando que
+    palavras maiúsculas genéricas (cidades, siglas, etc.) disparem injeção
+    de chunks irrelevantes.
+
+    Exemplos:
+      "quais as disciplinas do professor Sekeff?" → ["Sekeff"]
+      "o IFPI de Piripiri é bom?"                → []   (sem gatilho de professor)
+      "prof. Maria Silva ministra o quê?"        → ["Maria", "Silva"]
     """
     import re
 
     names: list[str] = []
 
-    # Estratégia 1: padrão "professor <Nome>" (usuário pode digitar em minúsculo)
     for match in re.finditer(
         r'(?:professora?|prof\.?|docente)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ]{2,}(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ]{2,})?)',
         question, re.IGNORECASE
     ):
         candidate = match.group(1).strip()
-        # pega apenas o sobrenome/último token se for composto
+        for token in candidate.split():
+            if token.lower() not in _ENTITY_STOP and len(token) >= 3:
+                names.append(token)
+
+    # Remove duplicatas preservando ordem
+    seen: set[str] = set()
+    unique: list[str] = []
+    for n in names:
+        key = n.lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(n)
+    return unique
+
+
+def _extract_entity_names(question: str) -> list[str]:
+    """
+    Extrai nomes próprios (prováveis nomes de pessoas ou entidades específicas)
+    da pergunta. Inclui estratégia 1 (gatilho professor) e estratégia 2
+    (palavras capitalizadas pelo usuário).
+
+    ATENÇÃO: esta função NÃO é usada para injeção por busca textual — para
+    isso usa-se _extract_professor_names(), que é mais conservadora e evita
+    falsos positivos com nomes de cidades, siglas, etc.
+    """
+    import re
+
+    names: list[str] = []
+
+    # Estratégia 1: padrão "professor <Nome>"
+    for match in re.finditer(
+        r'(?:professora?|prof\.?|docente)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ]{2,}(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ]{2,})?)',
+        question, re.IGNORECASE
+    ):
+        candidate = match.group(1).strip()
         for token in candidate.split():
             if token.lower() not in _ENTITY_STOP and len(token) >= 3:
                 names.append(token)
@@ -202,12 +272,13 @@ def _inject_by_text_search(
     base_relevance: float = 0.80,
 ) -> list[tuple[Any, float]]:
     """
-    Busca textual direta por nomes próprios detectados na pergunta.
-    Contorna o gap semântico entre consultas sobre entidades específicas
-    (professores, disciplinas) e documentos que mencionam essas entidades
-    em formatos tabulares/estruturados que o embedding model não recupera bem.
+    Busca textual direta por nomes de PROFESSORES detectados na pergunta.
+    Usa _extract_professor_names() (mais conservadora) em vez de
+    _extract_entity_names() para evitar injetar chunks irrelevantes quando
+    o usuário menciona cidades, siglas ou outras palavras maiúsculas que
+    não são nomes de docentes (ex: "IFPI de Piripiri", "UAB").
     """
-    entity_names = _extract_entity_names(question)
+    entity_names = _extract_professor_names(question)
     if not entity_names:
         return []
 
@@ -648,7 +719,10 @@ def consulta_institucional(
     )
 
     answer = (answer or "").strip()
-    if answer == NOT_FOUND_ANSWER:
+    if _is_not_found_answer(answer):
+        # LLM sinalizou "não encontrado" — com frase exata ou variante com explicação extra.
+        # Tentamos retries com queries alternativas antes de escalar para a web.
+
         # Retry 1: a query reescrita pode ter sido específica demais e perdeu o documento correto.
         # Tentamos novamente com a pergunta original (sem reescrita de contexto).
         retry_queries: list[str] = []
@@ -663,7 +737,7 @@ def consulta_institucional(
             retry_queries.append(keywords)
 
         for i, retry_q in enumerate(retry_queries, start=1):
-            print(f"[RAG][RETRY {i}] LLM retornou NOT_FOUND. Tentando com query alternativa: '{retry_q[:80]}'")
+            print(f"[RAG][RETRY {i}] LLM sinalizou NOT_FOUND. Tentando com query alternativa: '{retry_q[:80]}'")
             retrieval2 = retrieve_with_threshold(retry_q, k=k, score_threshold=score_threshold)
             if retrieval2.get("status") == "success":
                 docs2 = retrieval2.get("docs") or []
@@ -680,7 +754,7 @@ def consulta_institucional(
                     }
                 )
                 answer2 = (answer2 or "").strip()
-                if answer2 and answer2 != NOT_FOUND_ANSWER:
+                if answer2 and not _is_not_found_answer(answer2):
                     print(f"[RAG][RETRY {i}] Retry bem-sucedido.")
                     return {
                         "status": "success",
