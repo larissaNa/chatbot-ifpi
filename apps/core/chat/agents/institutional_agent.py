@@ -187,27 +187,64 @@ _ENTITY_STOP = frozenset({
 })
 
 
-def _extract_entity_names(question: str) -> list[str]:
+def _extract_professor_names(question: str) -> list[str]:
     """
-    Extrai nomes próprios (prováveis nomes de pessoas, disciplinas específicas, etc.)
-    da pergunta para uso em busca textual direta.
+    Extrai APENAS nomes de professores da pergunta — palavras que aparecem
+    logo após "professor(a)", "prof." ou "docente".
 
-    Estratégias:
-    1. Palavra(s) imediatamente após "professor(a)" / "prof." / "docente"
-    2. Palavras capitalizadas na query original (usuário digitou com maiúscula)
-    3. Palavras não-stop com >= 4 letras que aparecem após indicadores semânticos
+    Usada exclusivamente para injeção por busca textual, evitando que
+    palavras maiúsculas genéricas (cidades, siglas, etc.) disparem injeção
+    de chunks irrelevantes.
+
+    Exemplos:
+      "quais as disciplinas do professor Sekeff?" → ["Sekeff"]
+      "o IFPI de Piripiri é bom?"                → []   (sem gatilho de professor)
+      "prof. Maria Silva ministra o quê?"        → ["Maria", "Silva"]
     """
     import re
 
     names: list[str] = []
 
-    # Estratégia 1: padrão "professor <Nome>" (usuário pode digitar em minúsculo)
     for match in re.finditer(
         r'(?:professora?|prof\.?|docente)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ]{2,}(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ]{2,})?)',
         question, re.IGNORECASE
     ):
         candidate = match.group(1).strip()
-        # pega apenas o sobrenome/último token se for composto
+        for token in candidate.split():
+            if token.lower() not in _ENTITY_STOP and len(token) >= 3:
+                names.append(token)
+
+    # Remove duplicatas preservando ordem
+    seen: set[str] = set()
+    unique: list[str] = []
+    for n in names:
+        key = n.lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(n)
+    return unique
+
+
+def _extract_entity_names(question: str) -> list[str]:
+    """
+    Extrai nomes próprios (prováveis nomes de pessoas ou entidades específicas)
+    da pergunta. Inclui estratégia 1 (gatilho professor) e estratégia 2
+    (palavras capitalizadas pelo usuário).
+
+    ATENÇÃO: esta função NÃO é usada para injeção por busca textual — para
+    isso usa-se _extract_professor_names(), que é mais conservadora e evita
+    falsos positivos com nomes de cidades, siglas, etc.
+    """
+    import re
+
+    names: list[str] = []
+
+    # Estratégia 1: padrão "professor <Nome>"
+    for match in re.finditer(
+        r'(?:professora?|prof\.?|docente)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ]{2,}(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ]{2,})?)',
+        question, re.IGNORECASE
+    ):
+        candidate = match.group(1).strip()
         for token in candidate.split():
             if token.lower() not in _ENTITY_STOP and len(token) >= 3:
                 names.append(token)
@@ -235,12 +272,13 @@ def _inject_by_text_search(
     base_relevance: float = 0.80,
 ) -> list[tuple[Any, float]]:
     """
-    Busca textual direta por nomes próprios detectados na pergunta.
-    Contorna o gap semântico entre consultas sobre entidades específicas
-    (professores, disciplinas) e documentos que mencionam essas entidades
-    em formatos tabulares/estruturados que o embedding model não recupera bem.
+    Busca textual direta por nomes de PROFESSORES detectados na pergunta.
+    Usa _extract_professor_names() (mais conservadora) em vez de
+    _extract_entity_names() para evitar injetar chunks irrelevantes quando
+    o usuário menciona cidades, siglas ou outras palavras maiúsculas que
+    não são nomes de docentes (ex: "IFPI de Piripiri", "UAB").
     """
-    entity_names = _extract_entity_names(question)
+    entity_names = _extract_professor_names(question)
     if not entity_names:
         return []
 
