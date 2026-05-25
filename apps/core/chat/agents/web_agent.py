@@ -81,13 +81,16 @@ def _sources_text(results: list[dict[str, Any]]) -> str:
 def web_search(question: str, *, max_results: int = 4) -> dict[str, Any]:
     q = (question or "").strip()
     if not q:
+        print("[WEB][ERROR] Pergunta vazia.")
         return {"status": "error", "message": "Pergunta vazia.", "results": []}
 
-    tavily_tool = _get_tavily_tool()
     tavily_api_key = os.getenv("TAVILY_API_KEY")
     if not tavily_api_key:
+        print("[WEB][ERROR] TAVILY_API_KEY não configurada — busca web desabilitada.")
         return {"status": "error", "message": "TAVILY_API_KEY ausente.", "results": []}
 
+    print(f"[WEB][SEARCH] query='{q[:100]}'")
+    tavily_tool = _get_tavily_tool()
     raw = None
     try:
         if hasattr(tavily_tool, "max_results"):
@@ -100,9 +103,11 @@ def web_search(question: str, *, max_results: int = 4) -> dict[str, Any]:
         else:
             raw = tavily_tool(q)
     except Exception as e:
+        print(f"[WEB][ERROR] Falha na busca Tavily: {e}")
         return {"status": "error", "message": str(e), "results": []}
 
     results = _extract_results(raw)
+    print(f"[WEB][SEARCH] {len(results)} resultado(s) retornado(s).")
     return {"status": "success", "results": results}
 
 

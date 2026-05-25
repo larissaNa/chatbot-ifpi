@@ -721,10 +721,29 @@ def consulta_institucional(
     answer = (answer or "").strip()
     if _is_not_found_answer(answer):
         # LLM sinalizou "não encontrado" — com frase exata ou variante com explicação extra.
-        # Tentamos retries com queries alternativas antes de escalar para a web.
+
+        # Otimização: se o melhor score dos docs recuperados é baixo (< 0.55),
+        # os documentos claramente não têm a informação — retries com queries
+        # alternativas vão produzir os mesmos docs irrelevantes e perder tempo.
+        # Pulamos os retries e escalamos direto para a web.
+        top_score = max((d.get("relevance", 0.0) for d in docs), default=0.0)
+        if top_score < 0.55:
+            print(
+                f"[RAG][SKIP_RETRY] Top relevance={top_score:.3f} < 0.55 e LLM NOT_FOUND. "
+                "Docs claramente irrelevantes — escalando direto para a web."
+            )
+            return {
+                "status": "not_found",
+                "answer": NOT_FOUND_ANSWER,
+                "sources": [],
+                "docs": docs,
+                "rendered": f"Resposta:\n{NOT_FOUND_ANSWER}",
+            }
+
+        # Só faz retries quando os docs tinham relevância razoável (≥ 0.55) mas o
+        # LLM não encontrou a resposta — pode ser problema na formulação da query.
 
         # Retry 1: a query reescrita pode ter sido específica demais e perdeu o documento correto.
-        # Tentamos novamente com a pergunta original (sem reescrita de contexto).
         retry_queries: list[str] = []
 
         if search_query.strip().lower() != question.strip().lower():
@@ -737,7 +756,7 @@ def consulta_institucional(
             retry_queries.append(keywords)
 
         for i, retry_q in enumerate(retry_queries, start=1):
-            print(f"[RAG][RETRY {i}] LLM sinalizou NOT_FOUND. Tentando com query alternativa: '{retry_q[:80]}'")
+            print(f"[RAG][RETRY {i}] LLM sinalizou NOT_FOUND (top_score={top_score:.3f}). Tentando query: '{retry_q[:80]}'")
             retrieval2 = retrieve_with_threshold(retry_q, k=k, score_threshold=score_threshold)
             if retrieval2.get("status") == "success":
                 docs2 = retrieval2.get("docs") or []
