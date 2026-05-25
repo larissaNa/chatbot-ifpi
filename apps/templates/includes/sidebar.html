@@ -110,6 +110,17 @@
           <span class="title">Conversas Externas</span>
         </a>
       </li>
+
+      <li class="nav-item">
+        <a
+          class="sidebar-link {{ 'actived' if current_endpoint == 'authentication_blueprint.admin_system_logs' else '' }}"
+          href="{{ url_for('authentication_blueprint.admin_system_logs') }}"
+          title="Logs do Sistema"
+        >
+          <span class="icon-holder"><i class="ti-server"></i></span>
+          <span class="title">Logs do Sistema</span>
+        </a>
+      </li>
       {% endif %}
     </ul>
   </div>
