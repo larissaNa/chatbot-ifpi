@@ -36,6 +36,31 @@ _STOP_WORDS = {
     "qual", "quais", "quanto", "quantos", "quanta", "quantas",
 }
 
+# Palavras de sentimento/avaliação genéricas — removidas da query para melhorar busca
+_SENTIMENT_WORDS = {
+    "bom", "boa", "bons", "boas", "ruim", "ruins", "mau", "má", "maus", "más",
+    "ótimo", "ótima", "ótimos", "ótimas", "péssimo", "péssima", "péssimos", "péssimas",
+    "excelente", "excelentes", "terrível", "terríveis", "horrível", "horríveis",
+    "legal", "bacana", "incrível", "incríveis", "maravilhoso", "maravilhosa",
+    "chato", "chata", "difícil", "fácil", "melhor", "pior",
+}
+
+# Termos que indicam conteúdo relacionado ao IFPI
+_IFPI_TERMS = {"ifpi", "instituto federal", "piauí", "piauí", "federal do piauí"}
+
+
+def _results_are_ifpi_related(results: list[dict[str, Any]]) -> bool:
+    """Retorna True se pelo menos um resultado menciona o IFPI nos metadados."""
+    for result in results:
+        text = (
+            (result.get("url") or "") + " " +
+            (result.get("title") or "") + " " +
+            (result.get("content") or "")
+        ).lower()
+        if any(term in text for term in _IFPI_TERMS):
+            return True
+    return False
+
 _QUESTION_STARTERS = re.compile(
     r"^(?:o que\s+|quem\s+|como\s+(?:é|está|são|estão|fica|ficam|funciona)?\s*|"
     r"quando\s+|onde\s+|qual\s+(?:é|são)?\s*|quais\s+(?:são)?\s*|"
@@ -55,17 +80,28 @@ def _build_search_query(question: str) -> str:
     # Strip leading question phrases ("como é", "me fala sobre", etc.)
     q_clean = _QUESTION_STARTERS.sub("", q).strip()
 
-    # Tokenize and drop stop words
+    # Tokenize and drop stop words and sentiment/evaluative words
     tokens = re.findall(r"[A-Za-zÀ-ÿ0-9]+", q_clean)
-    keywords = [t for t in tokens if t.lower() not in _STOP_WORDS and len(t) >= 3]
+    excluded = _STOP_WORDS | _SENTIMENT_WORDS
+    keywords = [t for t in tokens if t.lower() not in excluded and len(t) >= 3]
 
     if not keywords:
-        keywords = [t for t in re.findall(r"[A-Za-zÀ-ÿ0-9]+", q) if len(t) >= 3]
+        keywords = [t for t in re.findall(r"[A-Za-zÀ-ÿ0-9]+", q)
+                    if t.lower() not in excluded and len(t) >= 3]
 
     # Ensure IFPI is part of the query for institutional scope
     has_ifpi = any(t.upper() == "IFPI" for t in keywords)
     if not has_ifpi:
         keywords = ["IFPI"] + keywords
+
+    # For questions about quality/reputation of a campus/location, add "avaliação"
+    q_lower = q.lower()
+    is_quality_question = any(w in q_lower for w in [
+        "bom", "boa", "ruim", "vale a pena", "recomenda", "qualidade", "avaliação",
+        "opinião", "reputação", "conceito", "nota", "enade",
+    ])
+    if is_quality_question and "avaliação" not in q_lower and "avaliacao" not in q_lower:
+        keywords.append("avaliação")
 
     query = " ".join(keywords)
     print(f"[WEB][QUERY] original='{question[:80]}' → query='{query[:100]}'")
@@ -173,6 +209,16 @@ def responder_web(
             "answer": NOT_FOUND_WEB,
             "sources": [],
             "rendered": f"Resposta:\n{NOT_FOUND_WEB}",
+        }
+
+    # Rejeita resultados sem relação com o IFPI antes de chamar o LLM
+    if not _results_are_ifpi_related(results):
+        print(f"[WEB][SCOPE] Nenhum resultado relacionado ao IFPI — descartando {len(results)} resultado(s).")
+        return {
+            "status": "not_found",
+            "answer": NOT_FOUND_ANSWER,
+            "sources": [],
+            "rendered": f"Resposta:\n{NOT_FOUND_ANSWER}",
         }
 
     prompt = ChatPromptTemplate.from_template(get_web_answer_prompt())
