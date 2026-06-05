@@ -12,7 +12,7 @@ def _get_tavily_tool():
     tavily_api_key = os.getenv("TAVILY_API_KEY")
 
     if tavily_api_key:
-        return TavilySearch(max_results=2, tavily_api_key=tavily_api_key)
+        return TavilySearch(max_results=4, tavily_api_key=tavily_api_key)
 
     @tool
     def disabled_search(query: str) -> str:
@@ -46,7 +46,13 @@ _SENTIMENT_WORDS = {
 }
 
 # Termos que indicam conteúdo relacionado ao IFPI
-_IFPI_TERMS = {"ifpi", "instituto federal", "piauí", "piauí", "federal do piauí"}
+_IFPI_TERMS = {
+    "ifpi", "instituto federal", "piauí", "piauí", "federal do piauí",
+    "campus teresina", "campus parnaíba", "campus floriano", "campus picos",
+    "campus oeiras", "campus corrente", "campus uruçuí", "campus valença",
+    "campus angical", "campus campo maior", "campus cocal", "campus paulistana",
+    "campus piripiri", "campus pedro ii", "campus São raimundo nonato",
+}
 
 
 def _results_are_ifpi_related(results: list[dict[str, Any]]) -> bool:

@@ -688,7 +688,11 @@ def consulta_institucional(
     from datetime import datetime
     today = today or datetime.now().strftime("%d/%m/%Y")
 
-    search_query = _generate_search_query(question, conversation_context, user_profile)
+    try:
+        search_query = _generate_search_query(question, conversation_context, user_profile)
+    except Exception as e:
+        print(f"[RAG][ERROR] Falha ao gerar query de busca: {e}")
+        search_query = question
     retrieval = retrieve_with_threshold(search_query, k=k, score_threshold=score_threshold)
 
     if retrieval.get("status") != "success":
@@ -707,16 +711,26 @@ def consulta_institucional(
 
     llm = _get_llm()
     chain = ChatPromptTemplate.from_template(get_rag_answer_prompt()) | llm | StrOutputParser()
-    answer = chain.invoke(
-        {
-            "context": context,
-            "question": (question or "").strip(),
-            "not_found_answer": NOT_FOUND_ANSWER,
-            "conversation_context": (conversation_context or "").strip() or "Sem histórico relevante.",
-            "user_profile": (user_profile or "").strip() or "Nenhuma informação adicional conhecida.",
-            "today": today,
+    try:
+        answer = chain.invoke(
+            {
+                "context": context,
+                "question": (question or "").strip(),
+                "not_found_answer": NOT_FOUND_ANSWER,
+                "conversation_context": (conversation_context or "").strip() or "Sem histórico relevante.",
+                "user_profile": (user_profile or "").strip() or "Nenhuma informação adicional conhecida.",
+                "today": today,
+            }
+        )
+    except Exception as e:
+        print(f"[RAG][ERROR] Falha na chamada ao LLM: {e}")
+        return {
+            "status": "error",
+            "answer": NOT_FOUND_ANSWER,
+            "sources": [],
+            "docs": docs,
+            "rendered": f"Resposta:\n{NOT_FOUND_ANSWER}",
         }
-    )
 
     answer = (answer or "").strip()
     if _is_not_found_answer(answer):
@@ -762,16 +776,20 @@ def consulta_institucional(
                 docs2 = retrieval2.get("docs") or []
                 sources2 = retrieval2.get("sources") or []
                 context2 = _format_context(docs2)
-                answer2 = chain.invoke(
-                    {
-                        "context": context2,
-                        "question": (question or "").strip(),
-                        "not_found_answer": NOT_FOUND_ANSWER,
-                        "conversation_context": (conversation_context or "").strip() or "Sem histórico relevante.",
-                        "user_profile": (user_profile or "").strip() or "Nenhuma informação adicional conhecida.",
-                        "today": today,
-                    }
-                )
+                try:
+                    answer2 = chain.invoke(
+                        {
+                            "context": context2,
+                            "question": (question or "").strip(),
+                            "not_found_answer": NOT_FOUND_ANSWER,
+                            "conversation_context": (conversation_context or "").strip() or "Sem histórico relevante.",
+                            "user_profile": (user_profile or "").strip() or "Nenhuma informação adicional conhecida.",
+                            "today": today,
+                        }
+                    )
+                except Exception as e:
+                    print(f"[RAG][RETRY {i}][ERROR] Falha na chamada ao LLM: {e}")
+                    continue
                 answer2 = (answer2 or "").strip()
                 if answer2 and not _is_not_found_answer(answer2):
                     print(f"[RAG][RETRY {i}] Retry bem-sucedido.")
