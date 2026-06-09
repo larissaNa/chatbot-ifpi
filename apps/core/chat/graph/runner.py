@@ -1,6 +1,7 @@
 import difflib
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
@@ -74,7 +75,21 @@ def run_chatbot(
     structured = None
 
     print(f"--- Iniciando execução do grafo para: {user_input[:50]}... ---")
-    final_state = get_graph().invoke(state)
+    _GRAPH_TIMEOUT = 60  # segundos — evita que o bot fique "digitando" para sempre
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(get_graph().invoke, state)
+            final_state = future.result(timeout=_GRAPH_TIMEOUT)
+    except FuturesTimeoutError:
+        execution_time = time.time() - start_time
+        print(f"[RUNNER][TIMEOUT] Grafo não respondeu em {_GRAPH_TIMEOUT}s — retornando fallback.")
+        return {
+            "response": "Resposta:\nDesculpe, a resposta demorou mais do que o esperado. Tente novamente em instantes.",
+            "status": "error",
+            "answer": None,
+            "sources": [],
+            "thoughts": None,
+        }
     execution_time = time.time() - start_time
     print(f"--- Execução concluída em {execution_time:.2f} segundos ---")
 
