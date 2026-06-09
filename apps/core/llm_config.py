@@ -18,7 +18,7 @@ def get_llm():
             model="gemini-2.0-flash",   # 2.5-flash é thinking model — muito lento para chatbot
             google_api_key=gemini_api_key,
             temperature=0.0,
-            request_timeout=25,         # Timeout de 25s para não travar o bot
+            request_timeout=15,         # 15s por chamada — pipeline RAG+web+conv cabe em 60s
         )
 
     # Fallback para Vertex AI
@@ -35,5 +35,5 @@ def get_llm():
     return ChatVertexAI(
         model="gemini-2.0-flash",   # 2.5-flash é thinking model — muito lento para chatbot
         temperature=0.0,
-        request_timeout=25,         # Timeout de 25s para não travar o bot
+        request_timeout=15,         # 15s por chamada — pipeline RAG+web+conv cabe em 60s
     )

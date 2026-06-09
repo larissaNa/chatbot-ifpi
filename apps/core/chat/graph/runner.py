@@ -76,11 +76,13 @@ def run_chatbot(
 
     print(f"--- Iniciando execução do grafo para: {user_input[:50]}... ---")
     _GRAPH_TIMEOUT = 60  # segundos — evita que o bot fique "digitando" para sempre
+    executor = ThreadPoolExecutor(max_workers=1)
     try:
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(get_graph().invoke, state)
-            final_state = future.result(timeout=_GRAPH_TIMEOUT)
+        future = executor.submit(get_graph().invoke, state)
+        final_state = future.result(timeout=_GRAPH_TIMEOUT)
     except FuturesTimeoutError:
+        # shutdown(wait=False) evita bloquear aqui enquanto o thread ainda roda
+        executor.shutdown(wait=False)
         execution_time = time.time() - start_time
         print(f"[RUNNER][TIMEOUT] Grafo não respondeu em {_GRAPH_TIMEOUT}s — retornando fallback.")
         return {
@@ -90,6 +92,7 @@ def run_chatbot(
             "sources": [],
             "thoughts": None,
         }
+    executor.shutdown(wait=False)
     execution_time = time.time() - start_time
     print(f"--- Execução concluída em {execution_time:.2f} segundos ---")
 
