@@ -75,7 +75,7 @@ def run_chatbot(
     structured = None
 
     print(f"--- Iniciando execução do grafo para: {user_input[:50]}... ---")
-    _GRAPH_TIMEOUT = 60  # segundos — evita que o bot fique "digitando" para sempre
+    _GRAPH_TIMEOUT = 120  # segundos — pipeline RAG+web+conv pode fazer até 3 chamadas LLM
     executor = ThreadPoolExecutor(max_workers=1)
     try:
         future = executor.submit(get_graph().invoke, state)
