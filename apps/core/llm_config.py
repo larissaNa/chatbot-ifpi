@@ -27,7 +27,7 @@ def get_llm():
     if gemini_api_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-lite",
+            model="gemini-3.1-flash-lite",
             google_api_key=gemini_api_key,
             temperature=0.0,
             request_timeout=30,
@@ -45,7 +45,7 @@ def get_llm():
     vertex_init(project=project, location=location)
 
     return ChatVertexAI(
-        model="gemini-2.0-flash-lite",
+        model="gemini-3.1-flash-lite",
         temperature=0.0,
         request_timeout=30,
         max_retries=0,
