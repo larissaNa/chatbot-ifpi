@@ -230,15 +230,26 @@ def responder_web(
     prompt = ChatPromptTemplate.from_template(get_web_answer_prompt())
     chain = prompt | _get_llm() | StrOutputParser()
 
-    answer = chain.invoke(
-        {
-            "sources_text": _sources_text(results),
-            "question": (question or "").strip(),
-            "not_found_answer": NOT_FOUND_ANSWER,
-            "conversation_context": (conversation_context or "").strip() or "Sem histórico relevante.",
-            "user_profile": (user_profile or "").strip() or "Nenhuma informação adicional conhecida.",
+    try:
+        answer = chain.invoke(
+            {
+                "sources_text": _sources_text(results),
+                "question": (question or "").strip(),
+                "not_found_answer": NOT_FOUND_ANSWER,
+                "conversation_context": (conversation_context or "").strip() or "Sem histórico relevante.",
+                "user_profile": (user_profile or "").strip() or "Nenhuma informação adicional conhecida.",
+            }
+        )
+    except Exception as e:
+        from apps.core.llm_config import BillingError, _raise_if_billing
+        _raise_if_billing(e)
+        print(f"[WEB][ERROR] Falha na chamada ao LLM: {e}")
+        return {
+            "status": "error",
+            "answer": NOT_FOUND_WEB,
+            "sources": [],
+            "rendered": f"Resposta:\n{NOT_FOUND_WEB}",
         }
-    )
     answer = (answer or "").strip()
 
     sources = [{"title": result.get("title") or result.get("url"), "url": result.get("url")} for result in results if result.get("url")]

@@ -81,9 +81,7 @@ def run_chatbot(
         future = executor.submit(get_graph().invoke, state)
         final_state = future.result(timeout=_GRAPH_TIMEOUT)
     except FuturesTimeoutError:
-        # shutdown(wait=False) evita bloquear aqui enquanto o thread ainda roda
         executor.shutdown(wait=False)
-        execution_time = time.time() - start_time
         print(f"[RUNNER][TIMEOUT] Grafo não respondeu em {_GRAPH_TIMEOUT}s — retornando fallback.")
         return {
             "response": "Resposta:\nDesculpe, a resposta demorou mais do que o esperado. Tente novamente em instantes.",
@@ -92,6 +90,19 @@ def run_chatbot(
             "sources": [],
             "thoughts": None,
         }
+    except Exception as exc:
+        executor.shutdown(wait=False)
+        from apps.core.llm_config import BillingError
+        if isinstance(exc.__cause__, BillingError) or isinstance(exc, BillingError):
+            print("[RUNNER][BILLING] Saldo da API esgotado.")
+            return {
+                "response": "Resposta:\nO serviço de IA está temporariamente indisponível (saldo da API esgotado). Entre em contato com o administrador.",
+                "status": "error",
+                "answer": None,
+                "sources": [],
+                "thoughts": None,
+            }
+        raise
     executor.shutdown(wait=False)
     execution_time = time.time() - start_time
     print(f"--- Execução concluída em {execution_time:.2f} segundos ---")
