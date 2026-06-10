@@ -394,7 +394,7 @@ def _inject_eval_docs(
 def retrieve_with_threshold(
     question: str,
     *,
-    k: int = 12,
+    k: int = 8,
     score_threshold: float = 0.40,
 ) -> dict[str, Any]:
     q = (question or "").strip()
@@ -598,12 +598,30 @@ def _format_context(docs: list[dict[str, Any]]) -> str:
     return "\n\n".join(blocks).strip()
 
 
+_PRONOMES_VAGOS = _re_nf.compile(
+    r"\b(isso|aquilo|aquela?|esse[sa]?|este[sa]?|ela|ele|eles|elas"
+    r"|minha?\s+turma|meu\s+curso|minha?\s+disciplina|minha?\s+prova"
+    r"|aquela\s+prova|esse\s+professor|aquele\s+professor"
+    r"|já\s+passou|ainda\s+tem|quando\s+é)\b",
+    _re_nf.IGNORECASE,
+)
+
+
 def _generate_search_query(question: str, context: str, profile: str) -> str:
     """
     Reescreve a pergunta do usuário para uma busca otimizada no banco vetorial,
     incorporando elementos do contexto (quem é o usuário, curso, turma, etc).
+
+    Só chama o LLM quando a pergunta contém pronomes vagos ou referências
+    ao contexto — caso contrário retorna a pergunta original diretamente,
+    evitando uma chamada desnecessária ao LLM e economizando ~1-3s.
     """
     if not context and not profile:
+        return question
+
+    # Sem referências ambíguas → a pergunta é auto-suficiente, não precisa de reescrita
+    if not _PRONOMES_VAGOS.search(question):
+        print(f"[RAG][QUERY_REWRITE] Sem pronomes vagos — usando pergunta original direto.")
         return question
 
     llm = _get_llm()
@@ -679,7 +697,7 @@ def _extract_keywords(question: str) -> str:
 def consulta_institucional(
     question: str,
     *,
-    k: int = 20,
+    k: int = 10,
     score_threshold: float = 0.40,
     conversation_context: str = "",
     user_profile: str = "",

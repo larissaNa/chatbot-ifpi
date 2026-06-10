@@ -14,7 +14,12 @@ def get_llm():
     gemini_api_key = os.getenv("GEMINI_API_KEY")
     if gemini_api_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
-        return ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=gemini_api_key, temperature=0.0)
+        return ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash",   # 2.5-flash é thinking model — muito lento para chatbot
+            google_api_key=gemini_api_key,
+            temperature=0.0,
+            request_timeout=15,         # 15s por chamada — pipeline RAG+web+conv cabe em 60s
+        )
 
     # Fallback para Vertex AI
     from vertexai import init as vertex_init
@@ -27,4 +32,8 @@ def get_llm():
 
     vertex_init(project=project, location=location)
 
-    return ChatVertexAI(model="gemini-2.5-flash", temperature=0.0)
+    return ChatVertexAI(
+        model="gemini-2.0-flash",   # 2.5-flash é thinking model — muito lento para chatbot
+        temperature=0.0,
+        request_timeout=15,         # 15s por chamada — pipeline RAG+web+conv cabe em 60s
+    )
