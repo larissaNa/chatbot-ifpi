@@ -9,7 +9,7 @@ Um **chatbot inteligente** desenvolvido para auxiliar alunos, professores e serv
 - **RAG sobre documentos institucionais** — indexação semântica de PDFs, DOCX e TXT (até 150 MB) via ChromaDB, com suporte a tabelas, extração de texto estruturado e expansão de contexto.
 - **Busca web (Tavily AI)** — acionada automaticamente quando os documentos locais não contêm a resposta. Fetcher robusto com fallback Playwright e suporte a proxy para evitar bloqueios (403).
 - **Pipeline multiagente (LangGraph)** — supervisor classifica cada pergunta em três rotas: RAG institucional, busca web ou conversa contextual.
-- **Modelo Gemini (Google)** — geração de respostas via `gemini-2.0-flash-lite`.
+- **Modelo Gemini (Google)** — geração de respostas via `gemini-3.1-lite`.
 - **Memória por thread** — mantém o contexto da conversa para perguntas de acompanhamento.
 - **Fluxo de revisão de crenças** — pipeline de agentes que detecta mudanças semânticas em documentos já indexados e atualiza o ChromaDB automaticamente.
 - **Modo produção público** — chatbot acessível sem login, controlado por variável de ambiente (`PROD_MODE`).
@@ -45,7 +45,7 @@ Link/Upload → Análise de Links → Extração (PDF/DOCX/TXT/HTML)
 
 | Camada | Tecnologia |
 |---|---|
-| LLM | Gemini 2.0 Flash Lite (Google AI) |
+| LLM | Gemini 3.1 Lite (Google AI) |
 | Orquestração | LangGraph |
 | Busca vetorial | ChromaDB (persistente local) |
 | Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` (HuggingFace, normalize=True) |
