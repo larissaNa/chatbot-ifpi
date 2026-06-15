@@ -1,59 +1,101 @@
-
 # Chatbot Institucional do IFPI
 
-Um **chatbot inteligente** desenvolvido para auxiliar alunos, professores e servidores do Instituto Federal do Piauí (IFPI) em consultas administrativas, acadêmicas e normativas. O sistema integra inteligência artificial com documentos institucionais, garantindo respostas rápidas, precisas e contextualizadas.
+Um **chatbot inteligente** desenvolvido para auxiliar alunos, professores e servidores do Instituto Federal do Piauí (IFPI) em consultas administrativas, acadêmicas e normativas. O sistema integra IA generativa com documentos institucionais, busca web e um pipeline multiagente, garantindo respostas rápidas, precisas e contextualizadas.
 
 ---
 
-## 🛠 Funcionalidades
+## Funcionalidades
 
-- Respostas baseadas em **documentos institucionais** (PDFs de normativas, resoluções e manuais).
-- Integração com **LangGraph** e modelo **Claude (Anthropic)** para geração de respostas inteligentes.
-- Busca semântica local com **ChromaDB**, permitindo consulta rápida de conteúdos relevantes.
-- Pesquisa na web via **Tavily AI** para informações atualizadas.
-- **Memória por thread**: mantém o contexto da conversa.
-- Interface web **Flask + Jinja2** para interação amigável.
-- Persistência de dados em **PostgreSQL**, pronto para produção com Docker Compose.
+- **RAG sobre documentos institucionais** — indexação semântica de PDFs, DOCX e TXT (até 150 MB) via ChromaDB, com suporte a tabelas, extração de texto estruturado e expansão de contexto.
+- **Busca web (Tavily AI)** — acionada automaticamente quando os documentos locais não contêm a resposta. Fetcher robusto com fallback Playwright e suporte a proxy para evitar bloqueios (403).
+- **Pipeline multiagente (LangGraph)** — supervisor classifica cada pergunta em três rotas: RAG institucional, busca web ou conversa contextual.
+- **Modelo Gemini (Google)** — geração de respostas via `gemini-2.0-flash-lite`.
+- **Memória por thread** — mantém o contexto da conversa para perguntas de acompanhamento.
+- **Fluxo de revisão de crenças** — pipeline de agentes que detecta mudanças semânticas em documentos já indexados e atualiza o ChromaDB automaticamente.
+- **Modo produção público** — chatbot acessível sem login, controlado por variável de ambiente (`PROD_MODE`).
+- **Painel administrativo** — visualização de conversas de usuários externos, feedbacks negativos (com modal de detalhes) e logs do sistema em tempo real.
+- **Defesa contra prompt injection** — sanitização de queries e bloqueio de instruções maliciosas em documentos carregados (duas camadas).
+- Interface web **Flask + Jinja2**, responsiva para mobile e desktop.
+- Persistência em **PostgreSQL**, pronto para produção com **Docker Compose**.
 
 ---
 
+## Arquitetura do Pipeline de Chat
 
-## ⚡ Requisitos
+```
+Usuário → Supervisor (LangGraph)
+              ├── RAG Local (ChromaDB + embeddings HuggingFace)
+              ├── Busca Web (Tavily AI + fetcher robusto)
+              └── Rota Conversacional (contexto + data atual)
+                        └── Gemini LLM → Resposta
+```
+
+## Arquitetura do Pipeline de Indexação (Revisão de Crenças)
+
+```
+Link/Upload → Análise de Links → Extração (PDF/DOCX/TXT/HTML)
+           → Processamento Semântico (chunking + embeddings)
+           → Revisão de Crenças (comparação semântica)
+           → ChromaDB (persistência vetorial)
+```
+
+---
+
+## Stack Tecnológica
+
+| Camada | Tecnologia |
+|---|---|
+| LLM | Gemini 2.0 Flash Lite (Google AI) |
+| Orquestração | LangGraph |
+| Busca vetorial | ChromaDB (persistente local) |
+| Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` (HuggingFace, normalize=True) |
+| Busca web | Tavily AI + fetcher com Playwright |
+| Backend | Flask + Jinja2 |
+| Banco de dados | PostgreSQL 15 |
+| Infraestrutura | Docker Compose + Nginx + Gunicorn |
+
+---
+
+## Requisitos
 
 - Python 3.11+
 - Docker e Docker Compose
 - PostgreSQL 15+
-- Dependências Python (instaladas via `pip install -r requirements.txt`)
+- Dependências Python: `pip install -r requirements.txt`
 
 ---
 
-## 🚀 Instalação
+## Instalação
 
 1. Clone o repositório:
 
 ```bash
 git clone https://github.com/larissaNa/chatbot-ifpi.git
 cd chatbot-ifpi
-````
+```
 
-3. Pegar chave de API no gemini
+2. Obtenha as chaves de API:
 
-GOOGLE AI STUDIO → APIS -→ CHAVE DE API
+   - **Gemini:** [Google AI Studio](https://aistudio.google.com/) → APIs → Chave de API
+   - **Tavily:** [tavily.com](https://tavily.com/) → Dashboard → API Keys
 
-GOOGLE CLOUD → IAM e administrador → Contas de serviço → Criar conta de serviço →
-“Chaves” → “Adicionar chave” → “Criar nova chave” → Formato JSON
-
-2. Configure variáveis de ambiente (`.env`):
+3. Configure o arquivo `.env` na raiz do projeto:
 
 ```env
-DEBUG=True
-TAVILY_API_KEY=your_tavily_key
-GEMINI_API_KEY =your_gemini_key
+# App
 FLASK_APP=run.py
 FLASK_DEBUG=1
+DEBUG=True
+SECRET_KEY=sua-chave-secreta
 
-ASSETS_ROOT=/static/assets
+# APIs
+GEMINI_API_KEY=your_gemini_key
+TAVILY_API_KEY=your_tavily_key
 
+# Modo produção (sem login, UI mínima)
+# PROD_MODE=true
+
+# Banco de dados
 DB_ENGINE=postgresql
 DB_HOST=db
 DB_NAME=fastapi_db
@@ -61,15 +103,17 @@ DB_USERNAME=fastapi
 DB_PASS=fastapi123
 DB_PORT=5432
 
+# Assets
+ASSETS_ROOT=/static/assets
 ```
 
-3. Inicialize containers Docker:
+4. Suba os containers:
 
 ```bash
 docker-compose up --build
 ```
 
-4. Acesse a interface web:
+5. Acesse:
 
 ```
 http://localhost
@@ -77,47 +121,72 @@ http://localhost
 
 ---
 
-## 📝 Uso
+## Uso
 
-* Cadastre-se no sistema
-* Faça login com seu nome de usuário e senha
-* Digite sua pergunta na interface web.
-* O chatbot responderá utilizando **fontes oficiais** e dados recentes.
-* Histórico da conversa é mantido por **thread**, permitindo continuidade do diálogo.
+**Modo padrão (com login):**
+- Cadastre-se e faça login
+- Digite sua pergunta — o sistema busca nos documentos oficiais do IFPI e, se necessário, na web
+- O histórico da conversa é mantido por thread
 
----
+**Modo produção (`PROD_MODE=true`):**
+- Chatbot público sem necessidade de cadastro
+- Interface mínima, focada na conversa
 
-## 🔧 Contribuição
-
-Contribuições são bem-vindas! Para colaborar:
-
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/nova-funcionalidade`)
-3. Faça commit das alterações (`git commit -am 'Adiciona nova funcionalidade'`)
-4. Push para a branch (`git push origin feature/nova-funcionalidade`)
-5. Abra um Pull Request
+**Painel Admin:**
+- Acesse `/admin` para gerenciar documentos, ver conversas de usuários e monitorar logs do sistema
 
 ---
 
-## 📚 Referências
+## Estrutura de Pastas (principais)
 
-* [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
-* [Claude AI - Anthropic](https://www.anthropic.com/)
-* [ChromaDB](https://www.trychroma.com/)
-* [Tavily AI](https://tavily.com/)
-* [Flask](https://flask.palletsprojects.com/)
-* [PostgreSQL](https://www.postgresql.org/)
+```
+chatbot-ifpi/
+├── apps/
+│   ├── authentication/       # Models, login, rotas de auth
+│   ├── core/
+│   │   ├── chat/agents/      # supervisor, institutional_agent, web_agent
+│   │   ├── documents/agents/ # belief_revision, chromadb, extraction, processing, link_analysis
+│   │   └── utils/            # fetcher robusto, utilitários
+│   └── home/                 # rotas principais, admin, feedback
+├── docs/logica_agentes/      # Documentação técnica de cada agente
+├── chroma_db/                # Banco vetorial persistente
+├── crenças/                  # Documentos para o pipeline de revisão de crenças
+├── nginx/                    # Configuração Nginx
+├── docker-compose.yml
+└── run.py
+```
 
 ---
 
-## ⚖️ Licença
+## Documentação Técnica
+
+A lógica de cada agente do pipeline de indexação está documentada em [`docs/logica_agentes/`](docs/logica_agentes/):
+
+- [Análise de Links](docs/logica_agentes/search_agent.MD)
+- [Extração](docs/logica_agentes/extraction_agent.MD)
+- [Processamento Semântico](docs/logica_agentes/processing_agent.MD)
+- [Revisão de Crenças](docs/logica_agentes/belief_revision_agent.MD)
+- [ChromaDB](docs/logica_agentes/chromadb_agent.MD)
+
+---
+
+## Referências
+
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
+- [Google AI Studio (Gemini)](https://aistudio.google.com/)
+- [ChromaDB](https://www.trychroma.com/)
+- [Tavily AI](https://tavily.com/)
+- [Flask](https://flask.palletsprojects.com/)
+- [PostgreSQL](https://www.postgresql.org/)
+
+---
+
+## Licença
 
 Este projeto está licenciado sob a [MIT License](LICENSE).
 
 ---
 
-## 👩‍💻 Autor
+## Autora
 
-**Larissa Souza do Nascimento** – Desenvolvimento do sistema multiagente e integração do chatbot institucional do IFPI.
-
-```
+**Larissa Souza do Nascimento** — Desenvolvimento do sistema multiagente e integração do chatbot institucional do IFPI.

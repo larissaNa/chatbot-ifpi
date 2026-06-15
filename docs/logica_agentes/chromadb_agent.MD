@@ -1,32 +1,25 @@
 # Agente ChromaDB – Implementação e Lógica
 
-Este documento descreve o funcionamento do agente responsável pela **persistência vetorial** e execução final das atualizações na memória institucional.
+Este documento descreve o agente responsável pela **persistência vetorial** e execução das atualizações na memória institucional.
 
 ---
 
-## 1. Onde está o Agente ChromaDB
+## 1. Onde está o Agente
 
-### 1.1 Implementação principal
-
-* Arquivo:
-  [`apps/core/agents/chromadb_agent.py`](file:///c:/Users/Larisssa/Projetos/projeto de pesquisa/chatbot-ifpi/apps/core/agents/chromadb_agent.py)
-* Tool LangChain:
-  `executar_persistencia(dados_persistencia: dict)`
-
-### 1.2 Integração no Pipeline
-
-Este agente atua como o **executor final** (sink) do pipeline de revisão de crenças. Ele recebe as ordens do Agente de Revisão e aplica as mudanças no banco de dados vetorial.
+* Arquivo: `apps/core/documents/agents/chromadb_agent.py`
+* Tool LangChain: `executar_persistencia(dados_persistencia: dict)`
+* Collection ChromaDB: `crencas_institucionais` (diretório `chroma_db/` na raiz do projeto)
 
 ---
 
 ## 2. Entrada esperada
 
-O tool `executar_persistencia` espera um dicionário contendo a decisão de revisão e os dados necessários para persistência (provenientes do output do `belief_revision_agent`):
+Recebe diretamente o output do `belief_revision_agent`:
 
 ```json
 {
   "id_crenca": "uuid-da-crenca",
-  "acao_recomendada": "ATUALIZAR", // Opções: MANTER | ATUALIZAR | REMOVER
+  "acao_recomendada": "ATUALIZAR",
   "chunks_processados": [
     {
       "page_content": "Texto do chunk...",
@@ -43,35 +36,29 @@ O tool `executar_persistencia` espera um dicionário contendo a decisão de revi
 
 ---
 
-## 3. Lógica de Execução
+## 3. Ações Suportadas
 
-O agente opera de forma determinística baseada na `acao_recomendada`.
+| `acao_recomendada` | Comportamento |
+|---|---|
+| `MANTER` | Nenhuma operação no ChromaDB. |
+| `SINALIZAR_OBSOLESCENCIA` | Não remove vetores. Marca `sugerido_obsoleto=True` no `DocumentoOficial` via SQL (quando em contexto Flask). Aguarda confirmação do administrador. |
+| `REMOVER` | Remove todos os vetores com `id_crenca` da collection. |
+| `ATUALIZAR` | (1) Remove vetores antigos com `id_crenca`. (2) Insere os novos chunks com IDs `{id_crenca}_{index}`. Requer lista de `chunks_processados` não vazia. |
 
-### Ações Suportadas
+### Sanitização de metadados
 
-1.  **MANTER**:
-    *   **Comportamento**: Nenhuma operação de escrita é realizada no banco.
-    *   **Log**: Registra que a crença foi verificada e mantida.
+Antes de inserir no ChromaDB, o agente sanitiza os metadados de cada chunk:
+- Valores `None` são convertidos para `""`
+- Listas, dicts e outros tipos são convertidos para `str`
+- Apenas `str`, `int`, `float` e `bool` passam sem conversão
 
-2.  **REMOVER**:
-    *   **Comportamento**: Remove todos os vetores associados ao `id_crenca` na collection do ChromaDB.
-    *   **Contexto**: Utilizado quando a fonte original se torna inválida ou inacessível.
+### Contexto de banco SQL
 
-3.  **ATUALIZAR**:
-    *   **Passo 1 (Limpeza)**: Remove preventivamente todos os vetores antigos associados ao `id_crenca` para evitar duplicatas ou chunks "órfãos".
-    *   **Passo 2 (Preparação)**: Gera IDs únicos para os novos chunks (`{id_crenca}_{index}`) e mescla os metadados do chunk com os metadados globais.
-    *   **Passo 3 (Inserção)**: Insere os novos vetores e documentos na collection.
-
-### Persistência
-
-*   Utiliza o diretório local `chroma_db` (na raiz do projeto) para armazenar os dados de forma persistente.
-*   Cria/Usa a collection `crencas_institucionais`.
+O agente verifica `HAS_DB_CONTEXT` na inicialização. Se `apps.db` não estiver disponível (ex.: execução fora do Flask), as operações SQL de auditoria são puladas silenciosamente.
 
 ---
 
 ## 4. Saída do Agente (JSON)
-
-O retorno confirma a execução da operação e fornece estatísticas para auditoria:
 
 ```json
 {
@@ -82,9 +69,21 @@ O retorno confirma a execução da operação e fornece estatísticas para audit
     "chunks_atualizados": 0,
     "chunks_removidos": 0
   },
-  "status_banco": "CONSISTENTE", // ou ALERTA em caso de erro
-  "observacoes": "Atualização completa. 15 chunks inseridos.",
-  "timestamp_operacao": "2024-03-20T12:05:00"
+  "status_banco": "CONSISTENTE",
+  "observacoes": "Atualizacao completa. 15 chunks inseridos.",
+  "timestamp_operacao": "2026-05-20T12:05:00"
+}
+```
+
+Em caso de erro:
+```json
+{
+  "id_crenca": "uuid-da-crenca",
+  "acao_executada": "NENHUMA",
+  "resultado": {"chunks_inseridos": 0, "chunks_atualizados": 0, "chunks_removidos": 0},
+  "status_banco": "ALERTA",
+  "observacoes": "Mensagem de erro...",
+  "timestamp_operacao": "..."
 }
 ```
 
@@ -92,10 +91,16 @@ O retorno confirma a execução da operação e fornece estatísticas para audit
 
 ## 5. Como testar
 
-Utilize o script de teste criado em `tests/test_chromadb_agent.py`. Este teste utiliza **mocks** para simular o ChromaDB, garantindo que o teste não escreva no banco real e seja rápido.
+```python
+from apps.core.documents.agents.chromadb_agent import executar_persistencia
 
-```bash
-python tests/test_chromadb_agent.py
+resultado = executar_persistencia.invoke({
+    "id_crenca": "meu-uuid",
+    "acao_recomendada": "ATUALIZAR",
+    "chunks_processados": [
+        {"page_content": "Art. 1º ...", "embedding": [0.1, 0.2], "metadata": {}}
+    ],
+    "metadados_associados": {"titulo": "Resolução 001/2024"}
+})
+print(resultado)
 ```
-
-Isso valida os três fluxos principais (`MANTER`, `REMOVER`, `ATUALIZAR`) e a integridade da passagem de parâmetros.
