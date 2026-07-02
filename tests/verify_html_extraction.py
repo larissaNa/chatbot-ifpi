@@ -37,6 +37,7 @@ class TestHtmlExtraction(unittest.TestCase):
         mock_get = MagicMock()
         mock_get.status_code = 200
         mock_get.text = html_content
+        mock_get.headers = {"Content-Type": "text/html; charset=utf-8"}
         mock_requests.get.return_value = mock_get
         
         # Run Link Analysis
@@ -44,15 +45,14 @@ class TestHtmlExtraction(unittest.TestCase):
         resultado_analise = analisar_link.invoke({"url": "http://example.com/page"})
         print(f"Resultado Análise: {resultado_analise}")
         
-        self.assertEqual(resultado_analise['status'], 'SUCESSO')
+        self.assertEqual(resultado_analise['status'], 'sucesso')
         self.assertEqual(resultado_analise['tipo_conteudo'], 'HTML_TEXTO')
         
         # Run Extraction
         print("\n--- Testando Extração de Conteúdo ---")
         
-        # Mock requests inside extraction agent as well
-        with patch('apps.core.documents.agents.extraction_agent.requests') as mock_req_extract:
-            mock_req_extract.get.return_value = mock_get
+        # Mock fetch_url_content inside extraction agent
+        with patch('apps.core.documents.agents.extraction_agent.fetch_url_content', return_value=html_content) as mock_fetch:
             resultado_extracao = extrair_conteudo.invoke({"analise": resultado_analise})
             
         print(f"Resultado Extração: {resultado_extracao}")
@@ -78,6 +78,7 @@ class TestHtmlExtraction(unittest.TestCase):
         mock_get = MagicMock()
         mock_get.status_code = 200
         mock_get.text = html_content
+        mock_get.headers = {"Content-Type": "text/html"}
         mock_requests.get.return_value = mock_get
         
         # Run Link Analysis
@@ -85,7 +86,7 @@ class TestHtmlExtraction(unittest.TestCase):
         resultado_analise = analisar_link.invoke({"url": "http://example.com/limit"})
         print(f"Resultado Análise: {resultado_analise}")
         
-        self.assertEqual(resultado_analise['status'], 'SUCESSO')
+        self.assertEqual(resultado_analise['status'], 'sucesso')
         self.assertEqual(resultado_analise['tipo_conteudo'], 'HTML_TEXTO')
         self.assertEqual(resultado_analise['proximo_agente'], 'AGENTE_EXTRACAO')
         

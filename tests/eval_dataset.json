@@ -1,52 +1,257 @@
 [
   {
-    "pergunta": "Qual é o procedimento para solicitar férias no IFPI?",
-    "resposta_esperada": "A solicitação de férias deve seguir o planejamento institucional, sendo organizada e controlada pelo setor responsável pela gestão de pessoas, que acompanha a programação e execução das férias dos servidores.",
-    "fontes": ["Regimento Interno Geral IFPI"]
+    "pergunta": "O que é o estágio probatório e quanto tempo dura?",
+    "resposta_esperada": "O estágio probatório é o período em que o servidor, ao entrar em exercício em cargo efetivo por concurso público, é submetido a avaliação de desempenho para verificar se possui as aptidões necessárias para adquirir estabilidade. Tem duração de 36 meses, com homologação 4 meses antes do término do período.",
+    "fontes": ["Manual do Servidor IFPI"]
   },
   {
-    "pergunta": "Quem é responsável por controlar a programação de férias dos servidores?",
-    "resposta_esperada": "A gestão e o controle da programação de férias dos servidores são realizados pelos setores responsáveis pela área de pessoal, que planejam, acompanham e verificam a execução das férias.",
-    "fontes": ["Regimento Interno Geral IFPI"]
+    "pergunta": "O que acontece se o servidor não for aprovado no estágio probatório?",
+    "resposta_esperada": "O servidor não aprovado no estágio probatório será exonerado ou, caso já seja estável em outro cargo, será reconduzido ao cargo anteriormente ocupado.",
+    "fontes": ["Manual do Servidor IFPI"]
   },
   {
-    "pergunta": "Qual o prazo para trancamento de disciplina?",
-    "resposta_esperada": "O trancamento de disciplina deve seguir os prazos estabelecidos no calendário acadêmico da instituição, sendo necessário que o estudante solicite dentro do período definido.",
-    "fontes": ["Regimento Interno Geral IFPI"]
+    "pergunta": "Quais são os deveres do servidor público federal segundo o manual?",
+    "resposta_esperada": "Entre os deveres estão exercer com zelo e dedicação as atribuições do cargo, ser leal às instituições, observar as normas legais e regulamentares, cumprir ordens superiores (exceto quando manifestamente ilegais), atender com presteza o público, guardar sigilo sobre assuntos da repartição, ser assíduo e pontual, e tratar com urbanidade as pessoas, conforme o artigo 116 da Lei nº 8.112/1990.",
+    "fontes": ["Manual do Servidor IFPI"]
   },
   {
-    "pergunta": "Quem acompanha o estágio probatório dos servidores no IFPI?",
-    "resposta_esperada": "A Comissão de Avaliação do Estágio Probatório é responsável por acompanhar, fiscalizar e avaliar o desempenho dos servidores durante o período probatório.",
-    "fontes": ["Regimento Interno Geral IFPI"]
+    "pergunta": "O que é proibido ao servidor público segundo a Lei nº 8.112/1990?",
+    "resposta_esperada": "É proibido ao servidor, entre outras condutas, ausentar-se do serviço durante o expediente sem prévia autorização, retirar documentos ou objetos da repartição sem anuência da autoridade competente, recusar fé a documentos públicos e opor resistência injustificada ao andamento de processos ou serviços.",
+    "fontes": ["Manual do Servidor IFPI"]
   },
   {
-    "pergunta": "Quais critérios são avaliados no estágio probatório?",
-    "resposta_esperada": "Os critérios incluem assiduidade, disciplina, responsabilidade, capacidade de iniciativa e produtividade do servidor durante o período de avaliação.",
-    "fontes": ["Regimento Interno Geral IFPI"]
+    "pergunta": "Quais são as formas de provimento de cargo efetivo no IFPI?",
+    "resposta_esperada": "As formas de provimento previstas no artigo 8º da Lei nº 8.112/90 são: nomeação, promoção, readaptação, reversão, aproveitamento, reintegração e recondução.",
+    "fontes": ["Manual do Servidor IFPI"]
   },
   {
-    "pergunta": "Qual é a função da Corregedoria-Geral no IFPI?",
-    "resposta_esperada": "A Corregedoria-Geral é responsável por apurar irregularidades, conduzir ações disciplinares e investigar possíveis desvios de conduta de servidores.",
-    "fontes": ["Regimento Interno Geral IFPI"]
+    "pergunta": "Qual é o prazo para a posse do servidor após a publicação do ato de provimento?",
+    "resposta_esperada": "A posse em cargo efetivo deve ocorrer no prazo de trinta dias contados da publicação do ato de provimento, conforme os artigos 7º e 13 da Lei nº 8.112/1990.",
+    "fontes": ["Manual do Servidor IFPI"]
   },
   {
-    "pergunta": "Quem publica resoluções e atos institucionais no IFPI?",
-    "resposta_esperada": "A Secretaria de Órgãos Superiores e Colegiados é responsável por editar e publicar resoluções e atos institucionais nos canais oficiais.",
-    "fontes": ["Regimento Interno Geral IFPI"]
+    "pergunta": "O que é a recondução de um servidor ao cargo anteriormente ocupado?",
+    "resposta_esperada": "Recondução é o retorno do servidor estável ao cargo anteriormente ocupado, decorrente de inabilitação em estágio probatório ou de desistência relativa a outro cargo, caso a nova estabilidade ainda não tenha sido alcançada.",
+    "fontes": ["Manual do Servidor IFPI"]
   },
   {
-    "pergunta": "Qual é o papel da Procuradoria Federal no IFPI?",
-    "resposta_esperada": "A Procuradoria Federal atua na representação judicial e extrajudicial do IFPI, além de prestar consultoria e assessoramento jurídico à instituição.",
-    "fontes": ["Regimento Interno Geral IFPI"]
+    "pergunta": "O que é a reversão de um servidor aposentado?",
+    "resposta_esperada": "Reversão é o retorno à atividade de servidor aposentado por invalidez, ou no interesse da administração, desde que o servidor tenha solicitado a reversão e a aposentadoria tenha sido voluntária.",
+    "fontes": ["Manual do Servidor IFPI"]
   },
   {
-    "pergunta": "O que faz a Comissão de Ética Institucional?",
-    "resposta_esperada": "A Comissão de Ética atua de forma consultiva e educativa, garantindo o cumprimento das normas éticas e apurando condutas incompatíveis com o serviço público.",
-    "fontes": ["Regimento Interno Geral IFPI"]
+    "pergunta": "Qual é o adicional de férias a que o servidor tem direito?",
+    "resposta_esperada": "O servidor tem direito a uma complementação correspondente a 1/3 do período de férias, calculado sobre a remuneração, denominado Adicional de Férias.",
+    "fontes": ["Manual do Servidor IFPI"]
   },
   {
-    "pergunta": "Quem organiza o calendário de reuniões institucionais?",
-    "resposta_esperada": "A Secretaria de Órgãos Superiores e Colegiados é responsável por organizar e divulgar o calendário de reuniões dos órgãos institucionais.",
-    "fontes": ["Regimento Interno Geral IFPI"]
+    "pergunta": "É possível acumular períodos de férias não usufruídos?",
+    "resposta_esperada": "As férias devem ser gozadas durante o ano civil, podendo ser acumuladas até o limite máximo de dois períodos, somente em caso de necessidade de serviço previamente declarada.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Qual é o limite de horas semanais para acumulação lícita de dois cargos de professor?",
+    "resposta_esperada": "Quando lícita, a acumulação de cargos está condicionada à compatibilidade de horários, existindo a limitação de 60 (sessenta) horas semanais para a soma das jornadas dos cargos acumuláveis.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "O servidor pode exercer atividade de comércio?",
+    "resposta_esperada": "É proibido ao servidor participar de gerência ou administração de sociedade privada e exercer o comércio, exceto na qualidade de acionista, cotista ou comanditário.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "É permitido ao servidor manter cônjuge ou parente sob sua chefia imediata em cargo de confiança?",
+    "resposta_esperada": "Não. É proibido ao servidor manter sob sua chefia imediata, em cargo ou função de confiança, cônjuge, companheiro ou parente até o segundo grau civil.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Em que esferas o servidor responde pelo exercício irregular de suas atribuições?",
+    "resposta_esperada": "O servidor responde civil, penal e administrativamente pelo exercício irregular de suas atribuições, conforme os artigos 121 a 126 da Lei nº 8.112/1990.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Qual é a penalidade em caso de acumulação ilegal de cargos comprovada má-fé?",
+    "resposta_esperada": "Nos casos de acumulação ilegal comprovada má-fé, a pena prevista é a demissão, após a conclusão de processo administrativo disciplinar sumário.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Qual é a diferença entre vencimento e remuneração do servidor?",
+    "resposta_esperada": "O vencimento é a retribuição pecuniária pelo exercício do cargo público, com valor fixado em lei. A remuneração é o vencimento do cargo efetivo acrescido das vantagens permanentes estabelecidas em lei.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Qual é o objetivo do abono de permanência?",
+    "resposta_esperada": "O abono de permanência tem como objetivo incentivar o servidor que já possui os requisitos para se aposentar a permanecer na atividade, até no máximo 75 anos de idade.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "O abono de permanência integra o teto remuneratório do servidor?",
+    "resposta_esperada": "Não. O abono de permanência é verba de indenização e, por isso, não pode integrar a base de cálculo para o teto remuneratório.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Quais são os percentuais do Adicional de Insalubridade?",
+    "resposta_esperada": "O Adicional de Insalubridade corresponde aos percentuais de 5%, 10% e 20%, de acordo com os graus mínimo, médio ou máximo estabelecidos em Laudo Ambiental, calculados sobre o vencimento do cargo efetivo do servidor.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Qual é o percentual do Adicional de Periculosidade?",
+    "resposta_esperada": "O Adicional de Periculosidade corresponde ao percentual de 10%, calculado sobre o vencimento do cargo efetivo do servidor.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "É possível acumular o Adicional de Insalubridade com o Adicional de Periculosidade?",
+    "resposta_esperada": "Não. Os Adicionais de Insalubridade e de Periculosidade, a Gratificação por Trabalho com Raios X ou substâncias radioativas e o Adicional de Irradiação Ionizante são inacumuláveis entre si.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Quando cessa o direito ao Adicional de Insalubridade ou Periculosidade?",
+    "resposta_esperada": "O direito à percepção do Adicional de Insalubridade ou Periculosidade cessa com a eliminação das condições ou dos riscos que deram causa à sua concessão.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Como é tratada a servidora gestante ou lactante exposta a condições insalubres ou perigosas?",
+    "resposta_esperada": "A servidora gestante ou lactante será afastada das operações perigosas ou dos locais considerados insalubres pela chefia imediata e, enquanto durar a gestação e a lactação, exercerá suas atividades em local salubre.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Os Adicionais de Insalubridade e Periculosidade são incorporados aos proventos de aposentadoria?",
+    "resposta_esperada": "Não. Os Adicionais de Insalubridade e Periculosidade não são incorporáveis aos proventos de aposentadoria.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "O que registra o assentamento funcional do servidor?",
+    "resposta_esperada": "O assentamento funcional registra as atividades desenvolvidas pelo servidor durante sua vida laboral no IFPI, servindo como fonte permanente de consulta sobre sua vida funcional.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Por que é importante o servidor manter seus dados cadastrais atualizados?",
+    "resposta_esperada": "É importante que o servidor mantenha atualizadas informações como dados pessoais, endereço, telefone, situação civil e dependentes, pois os assentamentos funcionais são fonte permanente de consulta sobre sua vida funcional no IFPI.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "O servidor com licença-prêmio por assiduidade pode optar por aproveitar os períodos não usufruídos para fins de abono de permanência?",
+    "resposta_esperada": "Sim, mas o servidor que possua licença-prêmio deve se manifestar quanto ao aproveitamento dos períodos não usufruídos para efeitos de abono de permanência, o que acarretará a impossibilidade de usufruí-los posteriormente e de contá-los para a aposentadoria.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "É permitido ao servidor utilizar pessoal ou recursos materiais da repartição em atividades particulares?",
+    "resposta_esperada": "Não, é proibido ao servidor utilizar pessoal ou recursos materiais da repartição em serviços ou atividades particulares.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Os docentes do Ensino Médio Integrado foram convocados para participar dos sábados letivos do semestre 2026.1?",
+    "resposta_esperada": "Sim. A Direção de Ensino do IFPI Campus Piripiri convocou os docentes que atuam no Ensino Médio Integrado para participação nos sábados letivos do semestre 2026.1, conforme previsto no calendário acadêmico institucional, com a escala/horário das turmas referente ao 2º bimestre letivo.",
+    "fontes": ["INFORMAÇÕES SOBRE SÁBADOS LETIVOS"]
+  },
+  {
+    "pergunta": "O que as turmas do 3º ano farão nos sábados letivos, segundo a comunicação do Campus Piripiri?",
+    "resposta_esperada": "As turmas de 3º ano terão aplicação de simulados e revisões para o ENEM nos sábados letivos.",
+    "fontes": ["INFORMAÇÕES SOBRE SÁBADOS LETIVOS"]
+  },
+  {
+    "pergunta": "É vedada a incorporação do Auxílio-Transporte aos vencimentos do servidor?",
+    "resposta_esperada": "Sim. É vedada a incorporação do Auxílio-Transporte aos vencimentos, à remuneração, ao provento ou à pensão do servidor.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Qual é a base de cálculo usada para o desconto referente ao Auxílio-Transporte?",
+    "resposta_esperada": "O valor do Auxílio-Transporte resulta da correspondência entre o valor diário da despesa com transporte coletivo, multiplicado por 22 dias, observando o desconto de 6% sobre o vencimento do cargo efetivo ocupado pelo servidor.",
+    "fontes": ["Manual do Servidor IFPI"]
+  },
+  {
+    "pergunta": "Quem leciona Algoritmos e Programação no Módulo I do curso de Análise e Desenvolvimento de Sistemas (ADS)?",
+    "resposta_esperada": "Iallen é o professor responsável pela disciplina de Algoritmos e Programação no Módulo I do curso de ADS.",
+    "fontes": ["HORÁRIO DE AULAS ADS"]
+  },
+  {
+    "pergunta": "Qual disciplina é ministrada às terças-feiras, das 18h às 19h, no Módulo I do curso de ADS?",
+    "resposta_esperada": "Inglês Técnico, com o professor Rodrigo O'Brien.",
+    "fontes": ["HORÁRIO DE AULAS ADS"]
+  },
+  {
+    "pergunta": "Quem é o professor de Matemática no 1º ano do curso Técnico Integrado ao Médio em Vestuário?",
+    "resposta_esperada": "Sérgio é o professor de Matemática no 1º ano do curso Técnico Integrado ao Médio em Vestuário.",
+    "fontes": ["HORÁRIO DE VESTUÁRIO"]
+  },
+  {
+    "pergunta": "Quem leciona a disciplina de História, Cultura e Moda no 1º ano do curso Técnico Integrado em Vestuário?",
+    "resposta_esperada": "Luciana é a professora de História, Cultura e Moda no 1º ano do curso Técnico Integrado em Vestuário.",
+    "fontes": ["HORÁRIO DE VESTUÁRIO"]
+  },
+  {
+    "pergunta": "Quem é a professora de Modelagem Tridimensional no Módulo I do curso de Design de Moda?",
+    "resposta_esperada": "Rimena é a professora de Modelagem Tridimensional no Módulo I do curso de Design de Moda.",
+    "fontes": ["HORÁRIO MODA"]
+  },
+  {
+    "pergunta": "Qual disciplina o professor Sérgio leciona no Módulo I da Licenciatura em Matemática, nas segundas e terças-feiras?",
+    "resposta_esperada": "Sérgio leciona Lógica Matemática no Módulo I da Licenciatura em Matemática, nas segundas e terças-feiras.",
+    "fontes": ["HORÁRIOS DE MATEMÁTICA"]
+  },
+  {
+    "pergunta": "Quem é o professor de Administração da Produção no Módulo IV do PROEJA Administração?",
+    "resposta_esperada": "Alan é o professor de Administração da Produção no Módulo IV do PROEJA Administração.",
+    "fontes": ["HORÁRIOS PROEJA"]
+  },
+  {
+    "pergunta": "Quem leciona Desenvolvimento Web Front-End no curso Técnico Integrado ao Médio em Informática?",
+    "resposta_esperada": "Wanderson Leonardo leciona Desenvolvimento Web Front-End no curso Técnico Integrado ao Médio em Informática.",
+    "fontes": ["HORÁRIOS DE INFORMÁTICA"]
+  },
+  {
+    "pergunta": "Qual atividade a turma 3º ADM A terá no sábado letivo de 23/05/26, no horário das 8h às 10h?",
+    "resposta_esperada": "A turma 3º ADM A terá Aplicação do Simulado no sábado letivo de 23/05/26, das 8h às 10h.",
+    "fontes": ["HORÁRIOS SÁBADOS LETIVOS"]
+  },
+  {
+    "pergunta": "Quais docentes constam na escala de sábados letivos do dia 23/05/26?",
+    "resposta_esperada": "Constam na escala docente do dia 23/05/26 os seguintes professores: Mikaelle, Aderlange, Caio, Carola, Clenilson, Cristiano, Francílio, Ivan, Hyane, Marcos Ramon, Nelson Costa, Ronan, Tamires, Wanderson Leonardo e Wanderson Vasconcelos.",
+    "fontes": ["ESCALA DOCENTE - SÁBADOS LETIVOS"]
+  },
+  {
+    "pergunta": "Para qual data foi remarcado o sábado letivo de reposição relacionado ao dia 11 de julho?",
+    "resposta_esperada": "O sábado letivo foi remarcado para o dia 18/07, como sábado de reposição, permutado com o sábado 11 de julho.",
+    "fontes": ["INFORMAÇÕES SOBRE SÁBADOS LETIVOS"]
+  },
+  {
+    "pergunta": "Quem leciona Matemática para a turma do 1º ANO A de Administração na terça-feira, 5 de maio, conforme o calendário de avaliações bimestrais?",
+    "resposta_esperada": "Sérgio leciona Matemática para a turma do 1º ANO A de Administração na terça-feira, 5 de maio.",
+    "fontes": ["Avaliações Bimestrais 206.1"]
+  },
+  {
+    "pergunta": "Qual disciplina é avaliada na segunda-feira, 4 de maio, pela professora Jane, na turma do 1º ANO B de Administração?",
+    "resposta_esperada": "Contabilidade Geral é a disciplina avaliada pela professora Jane na segunda-feira, 4 de maio, na turma do 1º ANO B de Administração.",
+    "fontes": ["Avaliações Bimestrais 206.1"]
+  },
+  {
+    "pergunta": "Quem leciona Filosofia na turma do 1º ANO A de Administração, na terça-feira de avaliações bimestrais?",
+    "resposta_esperada": "Benedito leciona Filosofia na turma do 1º ANO A de Administração, na terça-feira de avaliações bimestrais.",
+    "fontes": ["Avaliações Bimestrais 206.1"]
+  },
+  {
+    "pergunta": "Quem leciona Banco de Dados II no Módulo III do curso de Análise e Desenvolvimento de Sistemas (ADS), no turno da tarde?",
+    "resposta_esperada": "Wanderson Vasconcelos leciona Banco de Dados II no Módulo III do curso de ADS, no turno da tarde.",
+    "fontes": ["HORÁRIO DE AULAS ADS"]
+  },
+  {
+    "pergunta": "Quem leciona Teorias da Administração no Bacharelado em Administração (ADM)?",
+    "resposta_esperada": "Raul é o professor de Teorias da Administração no Bacharelado em Administração.",
+    "fontes": ["HORÁRIO DE AULAS ADM - SUPERIOR"]
+  },
+  {
+    "pergunta": "Quem leciona Inglês para Negócios no Módulo I do Bacharelado em Administração?",
+    "resposta_esperada": "Rodrigo O'Brien leciona Inglês para Negócios no Módulo I do Bacharelado em Administração.",
+    "fontes": ["HORÁRIO DE AULAS ADM - SUPERIOR"]
+  },
+  {
+    "pergunta": "Quem leciona Planejamento e Projeto de Coleção no Módulo III do curso de Design de Moda?",
+    "resposta_esperada": "Hyane leciona Planejamento e Projeto de Coleção no Módulo III do curso de Design de Moda.",
+    "fontes": ["HORÁRIO MODA"]
+  },
+  {
+    "pergunta": "Quem leciona Custos, Processos e Operações Contábeis no PROEJA Administração, Módulo IV?",
+    "resposta_esperada": "Jane leciona Custos, Processos e Operações Contábeis no Módulo IV do PROEJA Administração.",
+    "fontes": ["HORÁRIOS PROEJA"]
   }
 ]

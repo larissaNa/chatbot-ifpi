@@ -18,65 +18,44 @@ class TestLinkAnalysisAgent(unittest.TestCase):
     def test_analise_basica_pdf(self):
         """Testa se identifica corretamente um PDF direto"""
         print("\n[TESTE] Verificando identificação de PDF direto...")
-        with patch("apps.core.documents.agents.link_analysis_agent.requests.head") as mock_head:
-            mock_head.return_value.status_code = 200
-            mock_head.return_value.headers = {"Content-Type": "application/pdf"}
-            
+        with patch("apps.core.documents.agents.link_analysis_agent.requests.get") as mock_get:
+            mock_get.return_value.status_code = 200
+            mock_get.return_value.headers = {"Content-Type": "application/pdf"}
+
             url = "http://example.com/arquivo.pdf"
             print(f"   -> URL simulada: {url}")
             resultado = _analise_basica_url(url)
-            
+
             self.assertEqual(resultado["tipo_conteudo"], "PDF_DIRETO")
-            self.assertEqual(resultado["status"], "SUCESSO")
+            self.assertEqual(resultado["status"], "sucesso")
             print("   -> Sucesso: Identificado como PDF_DIRETO.")
 
     def test_analise_basica_html_com_pdf(self):
         """Testa se identifica HTML e encontra links de PDF"""
         print("\n[TESTE] Verificando identificação de HTML com links para PDF...")
-        with patch.object(sys.modules["requests"], "head") as mock_head, \
-             patch.object(sys.modules["requests"], "get") as mock_get, \
-             patch("bs4.BeautifulSoup") as mock_bs: 
-            
-            # HEAD diz que é HTML
-            mock_head.return_value.status_code = 200
-            mock_head.return_value.headers = {"Content-Type": "text/html"}
-            
-            # GET retorna HTML com link para PDF
+        module_name = _analise_basica_url.__module__
+
+        html_content = (
+            "<html><head><title>Normas Institucionais</title></head>"
+            "<body><a href=\"norma.pdf\">Baixar Norma</a>"
+            "<p>Resolução do IFPI publicada.</p></body></html>"
+        )
+
+        with patch("apps.core.documents.agents.link_analysis_agent.requests.get") as mock_get, \
+             patch(f"{module_name}.fetch_url_content", return_value=html_content):
+
+            # GET inicial (verificação de acessibilidade) diz que é HTML
             mock_get.return_value.status_code = 200
-            
-            # Mock BeautifulSoup para simular um link encontrado
-            mock_soup = MagicMock()
-            mock_a = MagicMock()
-            # Se o código usar link.get('href'), ele retornará "norma.pdf"
-            mock_a.get.return_value = "norma.pdf" 
-            # Se o código tratar link como dict como link['href'], precisamos suportar __getitem__
-            mock_a.__getitem__.return_value = "norma.pdf"
-            
-            mock_a.get_text.return_value = "Baixar Norma"
-            mock_soup.find_all.return_value = [mock_a]
-            mock_soup.select.return_value = [mock_a]
-            
-            mock_bs.return_value = mock_soup
-            
+            mock_get.return_value.headers = {"Content-Type": "text/html"}
+
             url = "http://example.com/normas"
             print(f"   -> URL simulada: {url}")
-            module_name = _analise_basica_url.__module__
-            
-            import urllib.parse
-            with patch("urllib.parse.urljoin", side_effect=lambda base, url: base.rstrip('/') + '/' + url if 'http' not in url else url):
-                 # Somente se o módulo estiver carregado 
-                 if module_name in sys.modules:
-                      with patch(f"{module_name}.BeautifulSoup", return_value=mock_soup):
-                          resultado = _analise_basica_url(url)
-                 else:
-                      # Se o módulo não estiver carregado, usamos a função original
-                      resultado = _analise_basica_url(url)
-            
+            resultado = _analise_basica_url(url)
+
             # Se o resultado for INVALIDO, significa que ocorreram exceções ou a lógica falhou.
-            # Geralmente INVALIDO significa que a requisição falhou ou o parser falhou.
             if resultado["tipo_conteudo"] == "INVALIDO":
-                 print(f"\nDEBUG FAIL: {resultado}")
-            
+                print(f"\nDEBUG FAIL: {resultado}")
+
             self.assertEqual(resultado["tipo_conteudo"], "HTML_COM_PDF")
             self.assertEqual(len(resultado["pdfs_encontrados"]), 1)
             self.assertTrue(resultado["pdfs_encontrados"][0]["url"].endswith("norma.pdf"))

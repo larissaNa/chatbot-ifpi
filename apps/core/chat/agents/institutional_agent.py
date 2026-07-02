@@ -177,6 +177,15 @@ _PROVA_KEYWORDS = frozenset({
     "quantos dias", "quando foi", "data da prova", "teste", "exame",
 })
 
+# Regex com \b (word boundary) para evitar falso-positivo por substring,
+# ex: "prova" casando dentro de "aprovado", "comprovada", "reprovado" etc.,
+# o que injetava indevidamente chunks de "Avaliações Bimestrais" em perguntas
+# sobre o Manual do Servidor (estágio probatório, acumulação de cargos...).
+_PROVA_KEYWORDS_RE = _re_nf.compile(
+    r"\b(?:" + "|".join(_re_nf.escape(kw) for kw in _PROVA_KEYWORDS) + r")\b",
+    _re_nf.IGNORECASE,
+)
+
 # Stop words que NÃO são nomes próprios e devem ser ignoradas na extração de entidades
 _ENTITY_STOP = frozenset({
     "quais", "qual", "como", "quando", "onde", "quem", "quanto", "quantos",
@@ -345,8 +354,7 @@ def _inject_eval_docs(
     de documentos de avaliação via metadados, contornando o gap semântico entre
     queries sobre datas de prova e o formato dos documentos indexados (grade/calendário).
     """
-    q_lower = (question or "").lower()
-    if not any(kw in q_lower for kw in _PROVA_KEYWORDS):
+    if not _PROVA_KEYWORDS_RE.search(question or ""):
         return []
 
     collection = getattr(vectorstore, "_collection", None)
@@ -389,6 +397,92 @@ def _inject_eval_docs(
     except Exception as e:
         print(f"[RAG][EVAL_INJECT] Erro: {e}")
         return []
+
+
+_TITLE_STOPWORDS = frozenset({
+    "horário", "horario", "horários", "horarios", "de", "da", "do", "das", "dos",
+    "e", "aulas", "aula", "letivos", "letivo", "sábados", "sabados", "sábado", "sabado",
+})
+
+
+def _inject_by_course_title_match(
+    question: str,
+    vectorstore: Any,
+    seen_map: dict[str, tuple[Any, float]],
+    base_relevance: float = 0.78,
+) -> list[tuple[Any, float]]:
+    """
+    Documentos de grade horária (ex: "HORÁRIO DE VESTUÁRIO", "HORÁRIOS DE
+    MATEMÁTICA") são curtos e dominados por nomes de disciplinas e professores
+    que se repetem em outros documentos similares — isso faz com que a busca
+    semântica pura confunda documentos de cursos diferentes (ex: uma pergunta
+    sobre "Matemática no curso de Vestuário" pode ranquear o documento de
+    "HORÁRIOS DE MATEMÁTICA" acima do documento certo, "HORÁRIO DE VESTUÁRIO",
+    que cai fora do top-k). Aqui extraímos o nome do curso a partir do próprio
+    título do documento e comparamos diretamente contra a pergunta, contornando
+    esse gap lexical — mesma estratégia de _inject_eval_docs/_inject_by_text_search.
+    """
+    import re
+
+    collection = getattr(vectorstore, "_collection", None)
+    if collection is None:
+        return []
+
+    q_lower = (question or "").lower()
+    if not q_lower:
+        return []
+
+    try:
+        all_data = collection.get(include=["metadatas"])
+    except Exception as e:
+        print(f"[RAG][TITLE_INJECT] Erro ao listar metadados: {e}")
+        return []
+
+    all_metas = all_data.get("metadatas") or []
+    titulos: set[str] = set()
+    for meta in all_metas:
+        titulo = str(meta.get("titulo") or meta.get("documento_titulo") or "").strip()
+        if titulo:
+            titulos.add(titulo)
+
+    matched_crencas: set[str] = set()
+    for titulo in titulos:
+        tokens = [
+            t for t in re.findall(r"[A-Za-zÀ-ÿ]+", titulo.lower())
+            if t not in _TITLE_STOPWORDS and len(t) >= 3
+        ]
+        # Exige que TODAS as palavras significativas do título apareçam na pergunta,
+        # para evitar falsos positivos com títulos curtos/genéricos.
+        if tokens and all(token in q_lower for token in tokens):
+            for meta in all_metas:
+                meta_titulo = str(meta.get("titulo") or meta.get("documento_titulo") or "").strip()
+                if meta_titulo == titulo:
+                    crenca = str(meta.get("id_crenca", ""))
+                    if crenca:
+                        matched_crencas.add(crenca)
+
+    if not matched_crencas:
+        return []
+
+    print(f"[RAG][TITLE_INJECT] Pergunta cita curso/documento — injetando {len(matched_crencas)} documento(s) por título.")
+    from langchain_core.documents import Document
+
+    extra: list[tuple[Any, float]] = []
+    already_added: set[str] = set(seen_map.keys())
+    for crenca in matched_crencas:
+        try:
+            result = collection.get(where={"id_crenca": {"$eq": crenca}}, include=["documents", "metadatas"])
+        except Exception as e:
+            print(f"[RAG][TITLE_INJECT] Erro buscando chunks de {crenca}: {e}")
+            continue
+        for doc_text, meta in zip(result.get("documents") or [], result.get("metadatas") or []):
+            chunk_id = str(meta.get("chunk_id", "") or hash(doc_text))
+            if chunk_id in already_added:
+                continue
+            already_added.add(chunk_id)
+            extra.append((Document(page_content=doc_text, metadata=meta), base_relevance))
+
+    return extra
 
 
 def retrieve_with_threshold(
@@ -453,6 +547,19 @@ def retrieve_with_threshold(
     # (ex: Manual do Servidor) na busca semântica.
     text_extra = _inject_by_text_search(q, vectorstore, seen_map)
     for doc, rel in text_extra:
+        doc_id = str(
+            getattr(doc, "id", None)
+            or getattr(doc, "metadata", {}).get("chunk_id")
+            or hash(getattr(doc, "page_content", ""))
+        )
+        if doc_id not in seen_map:
+            seen_map[doc_id] = (doc, rel)
+
+    # Injeção por título de curso: quando a pergunta cita o nome de um curso/grade
+    # cujo documento existe na base, injeta os chunks daquele documento diretamente
+    # — contorna a confusão entre documentos de horário com vocabulário similar.
+    title_extra = _inject_by_course_title_match(q, vectorstore, seen_map)
+    for doc, rel in title_extra:
         doc_id = str(
             getattr(doc, "id", None)
             or getattr(doc, "metadata", {}).get("chunk_id")

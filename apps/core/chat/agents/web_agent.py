@@ -6,6 +6,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
 from apps.core.chat.prompts import get_web_answer_prompt
+from apps.core.chat.agents.institutional_agent import _is_not_found_answer
 
 def _get_tavily_tool():
     from langchain_tavily import TavilySearch
@@ -255,7 +256,10 @@ def responder_web(
     sources = [{"title": result.get("title") or result.get("url"), "url": result.get("url")} for result in results if result.get("url")]
     sources = sources[:5]
 
-    if answer == NOT_FOUND_ANSWER:
+    if _is_not_found_answer(answer):
+        # Resposta é "não encontrei" exata ou uma variante com explicação extra
+        # (ex: "Não encontrei essa informação... Mas posso ajudar com outra coisa.").
+        # Em ambos os casos não há fundamentação real nas fontes web — não anexamos sources.
         return {
             "status": "not_found",
             "answer": NOT_FOUND_ANSWER,

@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
+import inspect
 import sys
 import os
 import json
@@ -19,13 +20,21 @@ mock_splitter = MagicMock()
 mock_splitter.split_text.return_value = ["Chunk 1", "Chunk 2"]
 sys.modules["langchain_text_splitters"].RecursiveCharacterTextSplitter.return_value = mock_splitter
 
-# Mock para tool
+
+# Mock para tool — replica o comportamento real do LangChain @tool.invoke,
+# que desempacota um dict de entrada pelo nome do (único) parâmetro da função.
 def tool_decorator(func):
+    param_names = list(inspect.signature(func).parameters)
+
+    def _invoke(x):
+        if isinstance(x, dict) and len(param_names) == 1 and param_names[0] in x:
+            return func(x[param_names[0]])
+        return func(x)
+
     def wrapper(*args, **kwargs):
-        if hasattr(func, "invoke"):
-            return func.invoke(*args, **kwargs)
         return func(*args, **kwargs)
-    wrapper.invoke = lambda x: func(x)
+
+    wrapper.invoke = _invoke
     return wrapper
 
 sys.modules["langchain_core.tools"] = MagicMock()
@@ -44,7 +53,10 @@ class TestProcessingAgent(unittest.TestCase):
                 {
                     "titulo": "Resolução Teste",
                     "tipo": "application/pdf",
-                    "conteudo": "Art. 1º Fica instituído o teste.\n\nArt. 2º O teste deve funcionar.",
+                    "conteudo": (
+                        "Art. 1º Fica instituído o teste de processamento de conteúdo institucional. "
+                        "Art. 2º O teste deve funcionar corretamente, gerando os chunks e embeddings esperados."
+                    ),
                     "metadata": {"autor": "Reitor"}
                 }
             ],
