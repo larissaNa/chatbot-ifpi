@@ -71,6 +71,40 @@ def configure_database(app):
         db.session.remove()
 
 
+def register_revision_scheduler(app):
+    """
+    Registra o ciclo de revisão de crenças no scheduler compartilhado,
+    executado de forma recorrente a cada 24 horas sobre todos os documentos
+    oficiais ativos (ver executar_ciclo_revisao no revision_orchestrator).
+
+    Pode ser desabilitado com REVISION_CYCLE_ENABLED=0 (útil em testes e
+    ambientes de desenvolvimento com auto-reload, que criam múltiplos processos).
+    """
+    if os.getenv("REVISION_CYCLE_ENABLED", "1").strip().lower() in ("0", "false", "no"):
+        print("[SCHEDULER] Ciclo de revisão de crenças desabilitado via REVISION_CYCLE_ENABLED.")
+        return
+
+    # Import tardio: apps.core.config valida variáveis de ambiente na importação
+    # e o orchestrator importa `apps.db` (evita import circular no topo do módulo).
+    from apps.core.config import scheduler
+
+    def _executar_ciclo_com_contexto():
+        with app.app_context():
+            from apps.core.documents.services.revision_orchestrator import executar_ciclo_revisao
+            executar_ciclo_revisao()
+
+    scheduler.add_job(
+        _executar_ciclo_com_contexto,
+        trigger="interval",
+        hours=24,
+        id="ciclo_revisao_crencas",
+        replace_existing=True,
+        coalesce=True,
+        max_instances=1,
+    )
+    print("[SCHEDULER] Ciclo de revisão de crenças registrado (intervalo: 24 horas).")
+
+
 def create_app(config):
     app = Flask(__name__)
     MESES = {
@@ -90,4 +124,5 @@ def create_app(config):
     register_extensions(app)
     register_blueprints(app)
     configure_database(app)
+    register_revision_scheduler(app)
     return app

@@ -209,3 +209,44 @@ def executar_revisao_documento(doc_id):
         log_to_terminal_and_db("Documento marcado como obsoleto.", "SYSTEM", "FLAG", doc_id=doc.id)
 
     return {"status": "sucesso", "acao": acao, "justificativa": justificativa}
+
+
+def executar_ciclo_revisao():
+    """
+    Executa um ciclo completo de revisão de crenças sobre todos os documentos
+    oficiais ativos e não obsoletos da base de conhecimento.
+
+    Chamado periodicamente pelo scheduler (ciclo de 24 horas, registrado em
+    apps/__init__.py) e reutilizável para acionamento manual. Falhas em um
+    documento não interrompem a revisão dos demais.
+    """
+    documentos = DocumentoOficial.query.filter_by(ativo=True, obsoleto=False).all()
+    log_to_terminal_and_db(
+        f"Ciclo de revisão de crenças iniciado: {len(documentos)} documento(s) ativo(s) a verificar.",
+        "ORCHESTRATOR",
+        "CYCLE_START",
+    )
+
+    resumo = {"total": len(documentos), "sucesso": 0, "erro": 0}
+    for doc in documentos:
+        try:
+            resultado = executar_revisao_documento(doc.id)
+            if resultado.get("status") == "sucesso":
+                resumo["sucesso"] += 1
+            else:
+                resumo["erro"] += 1
+        except Exception as e:
+            resumo["erro"] += 1
+            log_to_terminal_and_db(
+                f"Erro não tratado ao revisar documento {doc.id} ({doc.titulo}): {e}",
+                "ORCHESTRATOR",
+                "CYCLE_ERROR",
+                doc_id=doc.id,
+            )
+
+    log_to_terminal_and_db(
+        f"Ciclo de revisão concluído: {resumo['sucesso']} sucesso(s), {resumo['erro']} erro(s) de {resumo['total']} documento(s).",
+        "ORCHESTRATOR",
+        "CYCLE_END",
+    )
+    return resumo
