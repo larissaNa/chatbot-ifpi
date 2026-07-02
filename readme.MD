@@ -160,13 +160,19 @@ chatbot-ifpi/
 
 ## Documentação Técnica
 
-A lógica de cada agente do pipeline de indexação está documentada em [`docs/logica_agentes/`](docs/logica_agentes/):
+A lógica de cada agente está documentada em [`docs/logica_agentes/`](docs/logica_agentes/):
 
-- [Análise de Links](docs/logica_agentes/search_agent.MD)
-- [Extração](docs/logica_agentes/extraction_agent.MD)
+### Pipeline de Indexação de Documentos
+- [Análise de Links](docs/logica_agentes/link_analysis_agent.MD)
+- [Extração de Conteúdo](docs/logica_agentes/extraction_agent.MD)
 - [Processamento Semântico](docs/logica_agentes/processing_agent.MD)
 - [Revisão de Crenças](docs/logica_agentes/belief_revision_agent.MD)
-- [ChromaDB](docs/logica_agentes/chromadb_agent.MD)
+- [ChromaDB (Persistência Vetorial)](docs/logica_agentes/chromadb_agent.MD)
+
+### Pipeline de Conversação (Chat)
+- [Supervisor de Rotas](docs/logica_agentes/supervisor_agent.MD)
+- [Agente Institucional (RAG)](docs/logica_agentes/institutional_agent.MD)
+- [Agente de Busca Web (Tavily)](docs/logica_agentes/web_agent.MD)
 
 ---
 
